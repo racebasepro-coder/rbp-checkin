@@ -39,7 +39,7 @@ Deno.serve(async (req) => {
   const { data: who } = await sb.auth.getUser(jwt);
   if (!who?.user) return json({ error: "Sign in first." }, 401);
 
-  const { action, pin, token, value, deviceId, eventId, name, listUrl, writeUrl, copy, copyFrom, sigId, bib } = await req.json().catch(() => ({}));
+  const { action, pin, token, value, deviceId, eventId, name, listUrl, writeUrl, copy, copyFrom, sigId, bib, a, b, device } = await req.json().catch(() => ({}));
   const { data: row } = await sb.from("checkin_secret").select("pin_hash").maybeSingle();
   const hash = row?.pin_hash as string | null;
 
@@ -49,6 +49,13 @@ Deno.serve(async (req) => {
     if (!hash) await sb.from("checkin_secret").upsert({ id: true, pin_hash: bcrypt.hashSync(String(pin), 10) });
     else if (!bcrypt.compareSync(String(pin), hash)) return json({ error: "Wrong PIN or password." }, 401);
     return json({ token: await sign(Date.now() + TTL), ttl: TTL });
+  }
+  // Swap tab: any signed-in iPad may swap (confirmed twice in the app); every swap is logged in checkin_swaps.
+  if (action === "swap") {
+    const A = Number(a), B = Number(b);
+    if (!eventId || !Number.isInteger(A) || !Number.isInteger(B)) return json({ error: "Pick two bibs" }, 400);
+    const { error } = await sb.rpc("checkin_swap", { p_event: eventId, p_a: A, p_b: B, p_device: String(device ?? "") });
+    return error ? json({ error: error.message }, 400) : json({ ok: true });
   }
   if (!(await valid(token))) return json({ error: "Locked. Enter the RBP admin PIN." }, 401);
 

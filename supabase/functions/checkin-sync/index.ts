@@ -12,6 +12,7 @@ const WRITE_DEFAULT: Record<string, string> = {
   forList: "CollectedFor", desk: "CheckinDevice", merch: "PackageIssued", merchTime: "PackageTime",
   merchDesk: "PackageDevice", qid: "QID", qv: "QatariVerified", dob: "DateOfBirth", nat: "Nation",
   ice: "ICEName", icePhone: "ICEPhone", phone: "Phone", email: "Email", deleted: "CheckinDeleted",
+  first: "Firstname", last: "Lastname", team: "Club", sex: "Gender", size: "T-Shirt Size",
 };
 // Our column <- RR14 list column. The first name found in the list wins; Settings can override (readMap).
 const READ_ALIASES: Record<string, string[]> = {
@@ -109,13 +110,28 @@ async function pull(ev: string, cfg: Record<string, any>, LIST_URL?: string | nu
   return { pulled: out.length, rows: rows.length, held: hold.size, columns: [...present].slice(0, 30) };
 }
 
-async function push(ev: string, cfg: Record<string, any>, WRITE_URL?: string | null) {
+// App key -> our read column, so a write uses the column name this event's RR14 list really has (e.g. CellPhone).
+const APP_TO_READ: Record<string, string> = {
+  first: "first_name", last: "last_name", team: "team", sex: "sex", nat: "nation", qid: "qid", email: "email",
+  phone: "phone", ice: "ice_name", icePhone: "ice_phone", size: "shirt_size",
+};
+async function push(ev: string, cfg: Record<string, any>, WRITE_URL?: string | null, listCols: string[] = []) {
   if (!WRITE_URL) return { pushed: 0, note: "No RR14 write link for this event" };
   const { data: rows, error } = await sb.from("checkin_outbox").select("*").eq("event_id", ev).is("sent_at", null)
     .lt("attempts", 20).order("id").limit(300);
   if (error) throw error;
   if (!rows?.length) return { pushed: 0 };
-  const name = (k: string) => cfg.map?.[k] || WRITE_DEFAULT[k] || k;
+  const cols = new Set(listCols);
+  const fromList = (k: string) => {
+    const rc = APP_TO_READ[k];
+    if (!rc || !cols.size || cols.has(WRITE_DEFAULT[k])) return null;
+    return READ_ALIASES[rc]?.find((n) => cols.has(n)) ?? null;
+  };
+  // A name changed in Settings wins; the default name gives way to the list's own column name.
+  const name = (k: string) => {
+    const m = cfg.map?.[k];
+    return m && m !== WRITE_DEFAULT[k] ? m : fromList(k) || WRITE_DEFAULT[k] || k;
+  };
   const byBib = new Map<number, Record<string, string>>();
   for (const r of rows) {
     const cur = byBib.get(r.bib) ?? { Bib: String(r.bib) };
@@ -146,7 +162,7 @@ async function syncEvent(e: { id: string; settings: Record<string, any>; sync: R
   const cfg = e.settings ?? {};
   const result: Record<string, unknown> = { at: new Date().toISOString() };
   let ok = true;
-  try { if (mode !== "pull") result.push = await push(e.id, cfg, rr?.write_url); } catch (err) { ok = false; result.pushError = String(err); }
+  try { if (mode !== "pull") result.push = await push(e.id, cfg, rr?.write_url, e.sync?.pull?.columns ?? []); } catch (err) { ok = false; result.pushError = String(err); }
   if (mode !== "push") {
     await new Promise((r) => setTimeout(r, 1100)); // RR allows one call per second
     try { result.pull = await pull(e.id, cfg, rr?.list_url); } catch (err) { ok = false; result.pullError = String(err); }

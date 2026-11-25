@@ -49,6 +49,8 @@ body.fs main{padding-top:calc(20px + 5vh)!important}body.fs aside{padding-top:5v
 #shirtList .ush{display:inline-flex;align-items:baseline;gap:6px;background:#fff;color:#141414;border:4px solid #141414;border-radius:18px;padding:10px 26px 8px;font:800 96px/1 "Barlow Condensed",sans-serif}
 #shirtList .ush i{font:700 52px/1 "Barlow Condensed",sans-serif;font-style:normal;color:#e3361f}
 #shirtOv .sheet{width:min(820px,100%)!important}#shirtH{font-size:34px}#shirtSub{font-size:20px}#shirtDone{min-height:64px;font-size:20px;padding:0 34px}
+.swl{list-style:none;margin:8px 0 0;padding:0;display:grid;gap:6px}.swl button{width:100%;text-align:start;display:flex;gap:10px;align-items:center;min-height:52px;border:1.5px solid var(--line);border-radius:12px;background:var(--paper);color:inherit;padding:0 12px;font-size:17px}
+.swt{width:100%}.swt td,.swt th{font-size:18px;padding:10px 8px}.swt td.d{color:var(--red);font-weight:700}.swt th{color:var(--mute);font-weight:600;text-align:start}
 #doneOv{position:fixed;inset:0;z-index:60;display:none;place-items:center;background:rgba(0,0,0,.35)}#doneOv.on{display:grid}
 #doneOv .box{background:var(--ok);color:#fff;border-radius:22px;padding:34px 48px;text-align:center;max-width:min(560px,90vw);box-shadow:0 20px 60px rgba(0,0,0,.3);position:relative;overflow:hidden}
 #doneOv .tick{font-size:64px;line-height:1}#doneOv h2{margin:10px 0 6px;font-size:30px}#doneOv p{margin:0;font-size:19px;opacity:.95}
@@ -222,6 +224,7 @@ body.settings #gear{background:var(--red);color:#fff}
     <a href="#checkin" data-v="checkin" title="Bib pickup"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="6.5" cy="8" r=".6"/><circle cx="17.5" cy="8" r=".6"/><path d="M9 15v-5l-1.5 1.2M13 10h3l-2.5 5"/></svg><span class="lbl">Bib pickup</span></a>
     <a href="#merch" data-v="merch" title="Packages"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 8h14l-1 12H6z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg><span class="lbl">Packages</span></a>
     <a href="#stats" data-v="stats" title="Statistics"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg><span class="lbl">Statistics</span></a>
+    <a href="#swap" data-v="swap" title="Swap participants"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 4 3 8l4 4M3 8h14M17 20l4-4-4-4M21 16H7"/></svg><span class="lbl">Swap</span></a>
   </nav>
   <div class="foot">
     <button type="button" class="chip lbl" id="evName" title="Change event" style="font-weight:700;opacity:1;background:none;border:0;color:inherit;text-align:left;cursor:pointer;text-decoration:underline dotted"></button>
@@ -255,6 +258,16 @@ body.settings #gear{background:var(--red);color:#fff}
       <h3>Packages issued</h3>
       <div id="hist"></div>
     </div>
+  </section>
+  <section class="view" id="v-swap">
+    <h2 style="margin:0 0 4px">Swap participants</h2>
+    <p class="sub" style="margin:0 0 14px">Moves all personal data of two bibs into each other: name, team, gender, nation, date of birth, QID, contacts, ICE and shirt size. Bib numbers, pickup and package status stay where they are. RR14 gets both bibs within 30 seconds.</p>
+    <div class="two" id="swapPick">
+      <div class="panel"><h3>Bib A</h3><input class="search" id="swapQa" type="search" placeholder="Bib or name" autocomplete="off"><ul class="swl" id="swapLa"></ul></div>
+      <div class="panel"><h3>Bib B</h3><input class="search" id="swapQb" type="search" placeholder="Bib or name" autocomplete="off"><ul class="swl" id="swapLb"></ul></div>
+    </div>
+    <div class="panel" id="swapCmp" hidden></div>
+    <p id="swapMsg" class="small" style="min-height:1.5em"></p>
   </section>
   <section class="view" id="v-stats">
     <div class="kpis" id="kpis"></div>
@@ -420,7 +433,7 @@ body.settings #gear{background:var(--red);color:#fff}
 "use strict";
 {
 let syncState=null,EV=null;
-const APP_VERSION="1.5.3";
+const APP_VERSION="1.6.0";
 const SIZES=["XS","S","M","L","XL","XXL"];
 const FIELDS=[["dob","Date of birth",'type="date"'],["nat","Nation",'autocapitalize="characters" placeholder="e.g. QATAR"'],["qid","QID",'inputmode="numeric"'],["ice","ICE person",'placeholder="Emergency contact name"'],["icePhone","ICE phone",'type="tel" placeholder="+974…"'],["email","Email",'type="email" placeholder="name@example.com"'],["phone","Phone",'type="tel" placeholder="+974…"']];
 const FK=FIELDS.map(f=>f[0]);
@@ -682,7 +695,7 @@ $("setForm").onsubmit=async e=>{e.preventDefault();const f=e.target,n={map:{}};
   closeSettings();if(sel&&!ink){const p=byBib(sel);if($("card"))$("card").outerHTML=bibCard(p)}render()};
 
 /* ---- routing ---- */
-function route(){const h=location.hash.slice(1),v=["checkin","merch","stats"].includes(h)?h:"checkin";
+function route(){const h=location.hash.slice(1),v=["checkin","merch","stats","swap"].includes(h)?h:"checkin";
   document.querySelectorAll(".view").forEach(e=>e.classList.toggle("on",e.id==="v-"+v));
   document.querySelectorAll("aside nav a").forEach(a=>a.dataset.v===v?a.setAttribute("aria-current","page"):a.removeAttribute("aria-current"));render()}
 addEventListener("hashchange",()=>{if(document.body.classList.contains("settings"))closeSettings();route()});
@@ -783,6 +796,27 @@ function showShirts(p,ms,issued){
   $("shirtList").innerHTML=zs.map(z=>`<span class="ush"><i>${n[z]}×</i>${esc(z==="?"?"no size":z)}</span>`).join("");$("shirtWarn").hidden=!!issued;$("shirtOv").classList.add("on");setTimeout(()=>$("shirtDone").focus(),50)}
 $("shirtDone").onclick=()=>{$("shirtOv").classList.remove("on");$("q").focus()};
 $("scanFab").onclick=()=>$("scanBtn").click();
+/* ---- Swap tab: two bibs exchange all personal data ---- */
+const swap={a:null,b:null};
+const SWF=[["Name",p=>fullName(p)],["Team",p=>p.team||"Solo"],["Gender",p=>p.sex==="W"?"Women":p.sex==="M"?"Men":""],["Nation",p=>p.nat?`${flag(p.nat)} ${natCode(p.nat)}`:""],["Date of birth",p=>p.dob?fdate(p.dob):""],["QID",p=>p.qid],["Email",p=>p.email],["Phone",p=>p.phone],["ICE contact",p=>[p.ice,p.icePhone].filter(Boolean).join(" · ")],["T-shirt",p=>p.size],["Category",p=>p.ageGroup]];
+function swapFind(t){t=t.trim().toLowerCase();if(!t)return[];return P.filter(p=>String(p.bib).startsWith(t)||fullName(p).toLowerCase().includes(t)||(p.team||"").toLowerCase().includes(t)).sort((x,y)=>x.bib-y.bib).slice(0,6)}
+function swapList(k){const q=$(k==="a"?"swapQa":"swapQb"),L=$(k==="a"?"swapLa":"swapLb"),cur=swap[k]&&byBib(swap[k]);
+  const rows=q.value.trim()?swapFind(q.value):cur?[cur]:[];
+  L.innerHTML=rows.map(p=>`<li><button type="button" data-sw="${k}" data-bib="${p.bib}" ${swap[k]===p.bib?'style="border-color:var(--red);border-width:3px"':""}><span class="bb" style="${bibStyle(p)}">${p.bib}</span><span class="flag">${flag(p.nat)}</span><span>${esc(fullName(p))}<br><span class="sub">${p.team?esc(p.team):"Solo"}</span></span></button></li>`).join("")||(q.value.trim()?'<li class="sub">No match.</li>':"")}
+function renderSwap(){swapList("a");swapList("b");const A=swap.a&&byBib(swap.a),B=swap.b&&byBib(swap.b),c=$("swapCmp");
+  if(!A||!B||A.bib===B.bib){c.hidden=true;c.innerHTML="";return}
+  c.hidden=false;c.innerHTML=`<h3>Check before swapping</h3><div class="scroll"><table class="swt"><thead><tr><th></th><th>Bib ${A.bib} gets</th><th>Bib ${B.bib} gets</th></tr></thead><tbody>${SWF.map(([l,f])=>{const x=f(B)||"",y=f(A)||"",d=x!==y;return `<tr><th>${l}</th><td class="${d?"d":""}">${esc(x)||"—"}</td><td class="${d?"d":""}">${esc(y)||"—"}</td></tr>`}).join("")}</tbody></table></div>
+  <p class="sub">Red = changes. Pickup and package status stay on the bib numbers.</p><div class="acts"><button type="button" class="ghost" id="swapClear">Clear</button><button type="button" class="pri" id="swapGo">Swap all data</button></div>`;
+  $("swapClear").onclick=()=>{swap.a=swap.b=null;$("swapQa").value=$("swapQb").value="";$("swapMsg").textContent="";renderSwap()};
+  $("swapGo").onclick=async e=>{const b=e.currentTarget;if(b.dataset.sure!=="1"){b.dataset.sure="1";b.textContent=`Tap again: swap #${A.bib} and #${B.bib}`;setTimeout(()=>{if(b.isConnected){b.dataset.sure="";b.textContent="Swap all data"}},4000);return}
+    b.disabled=true;b.textContent="Swapping…";
+    try{await admin("swap",{eventId:EV.id,a:A.bib,b:B.bib,device:device||""})}catch(err){$("swapMsg").textContent="Not swapped: "+err.message;b.disabled=false;b.textContent="Swap all data";b.dataset.sure="";return}
+    const keep=["bib","sigId","sigTime","sigUrl","scope","by","desk","qv","merch","merchTime","merchDesk"],ca={...A},cb={...B};
+    Object.keys(ca).forEach(k=>{if(!keep.includes(k)){A[k]=cb[k];B[k]=ca[k]}});
+    $("swapMsg").textContent=`Swapped: #${A.bib} is now ${fullName(A)}, #${B.bib} is now ${fullName(B)}. RR14 gets both within 30 seconds.`;
+    swap.a=swap.b=null;$("swapQa").value=$("swapQb").value="";renderSwap()}}
+$("swapQa").oninput=()=>swapList("a");$("swapQb").oninput=()=>swapList("b");
+$("v-swap").addEventListener("click",e=>{const b=e.target.closest("[data-sw]");if(!b)return;const k=b.dataset.sw;swap[k]=+b.dataset.bib;$(k==="a"?"swapQa":"swapQb").value="";$("swapMsg").textContent="";renderSwap()});
 /* X on the bib card: drop this participant (and any unsigned drawing), back to search. */
 function closeCard(){sel=null;lastRR="";picked=new Set();ss.set("ck_draft",null);$("q").value="";render();$("q").focus()}
 /* Big confirmation for 3 seconds after a pickup, then back to search (tap closes it sooner). */
@@ -871,7 +905,7 @@ function renderStats(){
   $("recent").innerHTML=ev.length?`<table class="stack"><thead><tr><th>Time</th><th>What</th><th>Device</th></tr></thead><tbody>${ev.slice(0,12).map(([t,s,d])=>`<tr><td class="n">${fmt(t)}</td><td>${esc(s)}</td><td>${esc(d||"")}</td></tr>`).join("")}</tbody></table>`:'<p class="empty">No activity yet.</p>';
 }
 
-function render(){$("slogan").textContent=cfg.slogan||"Made with Passion. Driven by Data.";const v=location.hash.slice(1);$("scanFab").hidden=v==="merch"||v==="stats";if(v==="merch")renderMerch();else if(v==="stats")renderStats();else{renderList();if(!$("cv")||!sel)renderDetail()}}
+function render(){$("slogan").textContent=cfg.slogan||"Made with Passion. Driven by Data.";const v=location.hash.slice(1);$("scanFab").hidden=v==="merch"||v==="stats"||v==="swap";if(v==="merch")renderMerch();else if(v==="stats")renderStats();else if(v==="swap")renderSwap();else{renderList();if(!$("cv")||!sel)renderDetail()}}
 
 /* ---- events ---- */
 $("q").oninput=()=>{renderList();const v=$("q").value.trim();if(/^\d+$/.test(v)&&byBib(+v)&&String(byBib(+v).bib)===v&&!P.some(p=>String(p.bib).startsWith(v)&&p.bib!==+v))select(+v)};
