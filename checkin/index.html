@@ -211,8 +211,9 @@ label.btn input{position:absolute;opacity:0;width:1px;height:1px}
 .bar{display:flex;gap:10px;flex-wrap:wrap;align-items:center}.bar .search{flex:1 1 280px}
 .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,200px),1fr));gap:12px}
 .kpi{background:var(--paper);border:1.5px solid var(--line);border-radius:14px;padding:14px 16px}
-.kpi .st2{display:flex;gap:18px;white-space:nowrap;font-size:clamp(28px,3.2vw,40px)}.kpi .st2>span{display:inline-flex;align-items:baseline;gap:5px}
-.kpi .st2 small{font:700 13px/1 Barlow,sans-serif;text-transform:uppercase;letter-spacing:.06em;color:var(--mute)}.kpi .st2 em{font-style:normal;font-size:.55em;color:var(--mute)}
+.kpi{container-type:inline-size}
+.kpi .st2{display:flex;gap:8%;white-space:nowrap;font-size:clamp(22px,2.4vw,34px);font-size:min(16cqw,44px)}.kpi .st2>span{display:grid;gap:4px;min-width:0}.kpi .st2>span>b,.kpi .st2>span{line-height:1}
+.kpi .st2 small{font:700 13px/1 Barlow,sans-serif;text-transform:uppercase;letter-spacing:.06em;color:var(--mute)}.kpi .st2 em{font-style:normal;font-size:.5em;color:var(--mute)}
 .kpi b{display:block;font:800 clamp(40px,5vw,56px)/1 "Barlow Condensed",sans-serif}
 .kpi small{color:var(--mute);font-size:14px}
 .meter{height:10px;background:var(--bg);border-radius:6px;margin-top:10px;overflow:hidden}.meter i{display:block;height:100%;background:var(--red)}
@@ -490,7 +491,7 @@ body.settings #gear{background:var(--red);color:#fff}
 "use strict";
 {
 let syncState=null,EV=null;
-const APP_VERSION="1.9.3";
+const APP_VERSION="1.9.4";
 const SIZES=["XS","S","M","L","XL","XXL"];
 const FIELDS=[["dob","Date of birth",'type="date"'],["nat","Nation",'autocapitalize="characters" placeholder="e.g. QATAR"'],["qid","QID",'inputmode="numeric"'],["ice","ICE person",'placeholder="Emergency contact name"'],["icePhone","ICE phone",'type="tel" placeholder="+974…"'],["email","Email",'type="email" placeholder="name@example.com"'],["phone","Phone",'type="tel" placeholder="+974…"']];
 const FK=FIELDS.map(f=>f[0]);
@@ -1124,7 +1125,7 @@ $("ncPdf").onclick=ncPdf;
 $("ncWho").onclick=e=>{const b=e.target.closest("[data-nc]");if(!b)return;ncWho=b.dataset.nc;$("ncWho").querySelectorAll("[data-nc]").forEach(x=>x.setAttribute("aria-pressed",String(x===b)));renderNC()};
 function renderStats(){renderNC();
   const n=P.length,sig=P.filter(p=>p.sigTime).length,mer=P.filter(p=>p.merch).length,solo=P.filter(p=>!p.team),team=P.filter(p=>p.team),pc=(a,b)=>b?Math.round(a/b*100):0;
-  const k=[["Bibs collected",sig,n,"of all participants"],["Packages issued",mer,n,"shirts and bags"],["Waiting at package desk",sig-mer,sig,"signed, package not issued"],["Solo · team",`<span class="st2"><span><small>Solo</small>${solo.filter(p=>p.sigTime).length}<em>/${solo.length}</em></span><span><small>Team</small>${team.filter(p=>p.sigTime).length}<em>/${team.length}</em></span></span>`,null,"bibs collected"]];
+  const k=[["Bibs collected",sig,n,"of all participants"],["Packages issued",mer,n,"shirts and bags"],["Waiting at package desk",sig-mer,sig,"signed, package not issued"],["Solo · team",`<span class="st2"><span><small>Solo</small><span>${solo.filter(p=>p.sigTime).length}<em>/${solo.length}</em></span></span><span><small>Team</small><span>${team.filter(p=>p.sigTime).length}<em>/${team.length}</em></span></span></span>`,null,"bibs collected"]];
   $("kpis").innerHTML=k.map(([l,v,t,s])=>`<div class="kpi"><small>${l}</small><b>${v}${t!=null?`<span style="font-size:.45em;color:var(--mute)"> / ${t}</span>`:""}</b><small>${s}${t!=null?` · ${pc(v,t)}%`:""}</small>${t!=null?`<div class="meter"><i style="width:${pc(v,t)}%"></i></div>`:""}</div>`).join("");
   const st=cfg.stock||{},left=(k,z,iss)=>{const v=(st[k]||{})[z];return v==null?"—":`<span style="color:${v-iss<0?"var(--red)":v-iss<=3?"#c77700":"inherit"};font-weight:700">${v-iss}</span>`};
   if(unisex()){const zs=[...SIZES.filter(z=>P.some(p=>p.size===z)||(st.U||{})[z]!=null)];
