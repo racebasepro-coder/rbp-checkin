@@ -270,10 +270,10 @@ body.settings #gear{background:var(--red);color:#fff}
 <div class="ov" id="authOv" role="dialog" aria-modal="true" aria-labelledby="authH">
   <form class="sheet" id="authForm" style="width:min(440px,100%)">
     <h2 id="authH">Sign in</h2>
-    <p class="sub">Staff login for this event. The iPad stays signed in.</p>
+    <p class="sub">Enter the staff PIN or password. The iPad stays signed in.</p>
     <div class="form">
-      <label class="wide">Email<input name="email" type="email" autocapitalize="none" autocorrect="off" autocomplete="username"></label>
-      <label class="wide">Password<input name="password" type="password" autocomplete="current-password"></label>
+      <input name="email" type="hidden" autocomplete="username">
+      <label class="wide">PIN or password<input name="password" type="password" autocomplete="current-password" style="font-size:24px;letter-spacing:.2em"></label>
     </div>
     <p class="small" id="authMsg" style="color:var(--red);min-height:1.5em"></p>
     <div class="acts"><button class="pri" type="submit" id="authBtn">Sign in</button></div>
@@ -344,7 +344,7 @@ body.settings #gear{background:var(--red);color:#fff}
 "use strict";
 {
 let syncState=null,EV=null;
-const APP_VERSION="1.1";
+const APP_VERSION="1.2";
 const SIZES=["XS","S","M","L","XL","XXL"];
 const FIELDS=[["dob","Date of birth",'type="date"'],["nat","Nation",'maxlength="3" autocapitalize="characters" placeholder="CRO"'],["qid","QID",'inputmode="numeric"'],["ice","ICE person",'placeholder="Emergency contact name"'],["icePhone","ICE phone",'type="tel" placeholder="+974…"'],["email","Email",'type="email" placeholder="name@example.com"'],["phone","Phone",'type="tel" placeholder="+974…"']];
 const FK=FIELDS.map(f=>f[0]);
@@ -719,10 +719,11 @@ async function start(){if(started)return;started=true;$("mode").textContent="Con
 if(!sb){$("mode").textContent="Not set up";$("detail").innerHTML='<div class="note warn">config.js has no Supabase URL and key yet.</div>'}
 else{
   $("authForm").onsubmit=async e=>{e.preventDefault();const f=e.target;$("authBtn").disabled=true;$("authMsg").textContent="";
-    const{error}=await sb.auth.signInWithPassword({email:f.elements.email.value.trim(),password:f.elements.password.value});
-    $("authBtn").disabled=false;if(error){$("authMsg").textContent=error.message;return}
+    const{error}=await sb.auth.signInWithPassword({email:CONF.staffEmail,password:f.elements.password.value});
+    $("authBtn").disabled=false;if(error){$("authMsg").textContent=/invalid/i.test(error.message)?"Wrong PIN or password.":error.message;f.elements.password.value="";return}
     $("authOv").classList.remove("on");start()};
-  sb.auth.getSession().then(({data})=>{if(data&&data.session)start();else{$("mode").textContent="Signed out";$("authOv").classList.add("on")}});
+  $("authForm").elements.email.value=CONF.staffEmail||"";
+  sb.auth.getSession().then(({data})=>{if(data&&data.session)start();else{$("mode").textContent="Signed out";$("authOv").classList.add("on");setTimeout(()=>$("authForm").elements.password.focus(),50)}});
   sb.auth.onAuthStateChange(ev=>{if(ev==="SIGNED_OUT"&&started)location.reload()});
 }
 }
