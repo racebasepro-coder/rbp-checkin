@@ -42,7 +42,11 @@ button.ghost.danger{color:var(--red);border-color:var(--red)}
 #fsExit{position:fixed;right:226px;bottom:60px;z-index:70;display:flex;align-items:center;gap:8px;min-height:52px;padding:0 18px;border-radius:26px;border:0;background:var(--ink);color:var(--bg);font-weight:700;font-size:16px;box-shadow:0 6px 20px rgba(0,0,0,.3);opacity:.92}
 #scanFab{position:fixed;right:226px;bottom:60px;z-index:15;display:flex;align-items:center;gap:10px;min-height:64px;padding:0 24px;border-radius:32px;border:0;background:var(--red);color:#fff;font-weight:700;font-size:19px;box-shadow:0 8px 24px rgba(0,0,0,.35)}
 body.fs #scanFab{bottom:128px}main{padding-bottom:150px!important}body.mini #scanFab,body.mini #fsExit{right:90px}
-#shirtList .sg{justify-items:center}#shirtList .sz{font-size:56px}#shirtList .sz i{font-size:30px}#shirtList .sx{font-size:16px}
+#shirtBibs{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;margin:14px 0 6px}#shirtBibs .bb{font:800 44px/1 "Barlow Condensed",sans-serif;min-width:2.2em}
+#shirtList{display:flex;flex-wrap:wrap;justify-content:center;gap:16px 22px;margin:18px 0 22px}
+#shirtList .ush{display:inline-flex;align-items:baseline;gap:6px;background:#fff;color:#141414;border:4px solid #141414;border-radius:18px;padding:10px 26px 8px;font:800 96px/1 "Barlow Condensed",sans-serif}
+#shirtList .ush i{font:700 52px/1 "Barlow Condensed",sans-serif;font-style:normal;color:#e3361f}
+#shirtOv .sheet{width:min(820px,100%)!important}#shirtH{font-size:34px}#shirtSub{font-size:20px}#shirtDone{min-height:64px;font-size:20px;padding:0 34px}
 #doneOv{position:fixed;inset:0;z-index:60;display:none;place-items:center;background:rgba(0,0,0,.35)}#doneOv.on{display:grid}
 #doneOv .box{background:var(--ok);color:#fff;border-radius:22px;padding:34px 48px;text-align:center;max-width:min(560px,90vw);box-shadow:0 20px 60px rgba(0,0,0,.3);position:relative;overflow:hidden}
 #doneOv .tick{font-size:64px;line-height:1}#doneOv h2{margin:10px 0 6px;font-size:30px}#doneOv p{margin:0;font-size:19px;opacity:.95}
@@ -319,7 +323,7 @@ body.settings #gear{background:var(--red);color:#fff}
   <div class="sheet" style="width:min(640px,100%);text-align:center">
     <h2 id="shirtH">Hand over the shirts</h2>
     <p class="sub" id="shirtSub"></p>
-    <div id="shirtList" style="display:flex;flex-wrap:wrap;justify-content:center;align-items:flex-start;gap:18px 48px;margin:16px 0"></div>
+    <div id="shirtBibs"></div><div id="shirtList"></div>
     <p class="note warn" id="shirtWarn" hidden>Saved the pickup, but could not mark the shirts as issued. Mark them on the package desk.</p>
     <div class="acts" style="justify-content:center"><button type="button" class="pri" id="shirtDone" style="min-width:220px">Done, next participant</button></div>
   </div>
@@ -414,7 +418,7 @@ body.settings #gear{background:var(--red);color:#fff}
 "use strict";
 {
 let syncState=null,EV=null;
-const APP_VERSION="1.4.8";
+const APP_VERSION="1.4.9";
 const SIZES=["XS","S","M","L","XL","XXL"];
 const FIELDS=[["dob","Date of birth",'type="date"'],["nat","Nation",'autocapitalize="characters" placeholder="e.g. QATAR"'],["qid","QID",'inputmode="numeric"'],["ice","ICE person",'placeholder="Emergency contact name"'],["icePhone","ICE phone",'type="tel" placeholder="+974…"'],["email","Email",'type="email" placeholder="name@example.com"'],["phone","Phone",'type="tel" placeholder="+974…"']];
 const FK=FIELDS.map(f=>f[0]);
@@ -768,8 +772,12 @@ async function doConfirm(cv){
 /* One-desk events: after the signature, show the shirts to hand over (by size, men and women apart). */
 function showShirts(p,ms,issued){
   $("shirtH").textContent=ms.length>1?`Hand over ${ms.length} shirts`:"Hand over the shirt";
-  $("shirtSub").textContent=`${fullName(p)} · ${ms.length>1?ms.map(m=>"#"+m.bib).join(", "):"bib #"+p.bib}${p.team?" · "+p.team:""}`;
-  $("shirtList").innerHTML=shirtSum(ms)||'<p class="sub">No shirt sizes in RR14.</p>';$("shirtWarn").hidden=!!issued;$("shirtOv").classList.add("on");setTimeout(()=>$("shirtDone").focus(),50)}
+  $("shirtSub").textContent=`${fullName(p)}${p.team?" · "+p.team:""}`;
+  // Shirts here are unisex: only quantity × size, biggest first in size order.
+  const n={};ms.forEach(m=>{const z=m.size||"?";n[z]=(n[z]||0)+1});
+  const zs=[...SIZES.filter(z=>n[z]),...Object.keys(n).filter(z=>!SIZES.includes(z))];
+  $("shirtBibs").innerHTML=ms.map(m=>`<span class="bb" style="${bibStyle(m)}">${m.bib}</span>`).join("");
+  $("shirtList").innerHTML=zs.map(z=>`<span class="ush"><i>${n[z]}×</i>${esc(z==="?"?"no size":z)}</span>`).join("");$("shirtWarn").hidden=!!issued;$("shirtOv").classList.add("on");setTimeout(()=>$("shirtDone").focus(),50)}
 $("shirtDone").onclick=()=>{$("shirtOv").classList.remove("on");$("q").focus()};
 $("scanFab").onclick=()=>$("scanBtn").click();
 /* X on the bib card: drop this participant (and any unsigned drawing), back to search. */
