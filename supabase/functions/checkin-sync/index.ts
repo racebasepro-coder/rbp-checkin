@@ -113,8 +113,13 @@ async function pull(ev: string, cfg: Record<string, any>, LIST_URL?: string | nu
   const { count: known } = await sb.from("checkin_participants").select("bib", { count: "exact", head: true }).eq("event_id", ev).is("gone_at", null);
   if (out.length && out.length >= (known ?? 0) / 2) {
     const seen = new Set([...out.map((p) => p.bib), ...hold]);
-    const { data: all } = await sb.from("checkin_participants").select("bib").eq("event_id", ev).is("gone_at", null);
-    const miss = (all ?? []).map((r) => r.bib).filter((b) => !seen.has(b));
+    const all: number[] = [];
+    for (let i = 0; ; i += 1000) {
+      const { data } = await sb.from("checkin_participants").select("bib").eq("event_id", ev).is("gone_at", null).order("bib").range(i, i + 999);
+      all.push(...(data ?? []).map((r) => r.bib));
+      if (!data || data.length < 1000) break;
+    }
+    const miss = all.filter((b) => !seen.has(b));
     if (miss.length) { await sb.from("checkin_participants").update({ gone_at: now }).eq("event_id", ev).in("bib", miss); gone = miss.length; }
   }
   return { pulled: out.length, rows: rows.length, held: hold.size, gone, columns: [...present].slice(0, 30) };
