@@ -1,0 +1,3 @@
+-- RR14 CollectedBy gets the collector's name instead of the bib number (applied to production as checkin_collected_by_name).
+-- See checkin_collect(p_event, ...) in production; body as in 20261125000000_checkin.sql with:
+--   who := coalesce(nullif(trim(first_name || ' ' || last_name), ''), '#' || p_collector)  and  'by', who

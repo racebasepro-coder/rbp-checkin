@@ -8,7 +8,7 @@ const sb = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SE
 
 // App key -> RR14 field name. Settings -> "RR14 field names" overrides these (same list as the app).
 const WRITE_DEFAULT: Record<string, string> = {
-  sigUrl: "SignatureURL", sigTime: "SignatureTime", scope: "PickupScope", by: "CollectedBy",
+  sigUrl: "Signature", sigTime: "SignatureTime", scope: "PickupScope", by: "CollectedBy",
   forList: "CollectedFor", desk: "CheckinDevice", merch: "PackageIssued", merchTime: "PackageTime",
   merchDesk: "PackageDevice", qid: "QID", qv: "QatariVerified", dob: "DateOfBirth", nat: "Nation",
   ice: "ICEName", icePhone: "ICEPhone", phone: "Phone", email: "Email",
