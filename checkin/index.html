@@ -441,7 +441,8 @@ body.settings #gear{background:var(--red);color:#fff}
     <h4>Desks</h4>
     <div class="form"><label class="wide"><span><input type="checkbox" name="oneDesk" style="width:22px;height:22px;vertical-align:middle"> Bib and shirts at one desk: after the signature the shirts to hand over pop up, and there is no separate package desk step</span></label></div>
     <h4>Shirt stock</h4>
-    <p class="sub" style="margin:0 0 8px">Pieces on hand at the start, used in statistics.</p>
+    <div class="form"><label>Shirts<select name="shirtMode" id="shirtMode"><option value="gender">Men and women (separate cuts)</option><option value="unisex">Unisex (sizes only)</option></select></label></div>
+    <p class="sub" style="margin:0 0 8px">Pieces on hand at the start, used in statistics. Set for this event only.</p>
     <div class="scroll"><table class="stock"><thead><tr id="stockHead"><th></th></tr></thead><tbody id="stockBody"></tbody></table></div>
     <h4>Footer</h4>
     <div class="form"><label class="wide">Footer slogan<input name="slogan" placeholder="Made with Passion. Driven by Data."></label></div>
@@ -468,7 +469,7 @@ body.settings #gear{background:var(--red);color:#fff}
 "use strict";
 {
 let syncState=null,EV=null;
-const APP_VERSION="1.7.9";
+const APP_VERSION="1.8.0";
 const SIZES=["XS","S","M","L","XL","XXL"];
 const FIELDS=[["dob","Date of birth",'type="date"'],["nat","Nation",'autocapitalize="characters" placeholder="e.g. QATAR"'],["qid","QID",'inputmode="numeric"'],["ice","ICE person",'placeholder="Emergency contact name"'],["icePhone","ICE phone",'type="tel" placeholder="+974…"'],["email","Email",'type="email" placeholder="name@example.com"'],["phone","Phone",'type="tel" placeholder="+974…"']];
 const FK=FIELDS.map(f=>f[0]);
@@ -624,10 +625,11 @@ function openSettings(){const f=$("setForm");
   for(const el of f.elements){if(!el.name||el.name.startsWith("map_")||el.name.startsWith("col_"))continue;if(el.dataset.skip!==undefined){el.value="";continue}if(el.type==="checkbox"){el.checked=!!cfg[el.name];continue}el.value=cfg[el.name]??(el.tagName==="SELECT"?el.options[0].value:"")}
   $("adminMsg").textContent="";
   renderDevs();fillStock();renderSync();renderEvents();$("evNew").hidden=!!EV;$("setOv").classList.add("on");document.body.classList.add("settings");scrollTo(0,0)}
-function fillStock(){const st=cfg.stock||{};$("stockHead").innerHTML="<th></th>"+SIZES.map(z=>`<th class="n">${z}</th>`).join("")+'<th class="n">Total</th>';
-  $("stockBody").innerHTML=[["M","Men"],["W","Women"]].map(([k,l])=>`<tr><th>${l}</th>${SIZES.map(z=>`<td><input type="number" min="0" inputmode="numeric" data-stock="${k}_${z}" value="${esc((st[k]||{})[z]??"")}" style="width:4.2em;min-height:44px;font-size:17px;padding:6px;border-radius:8px;border:1.5px solid var(--line);background:var(--bg)"></td>`).join("")}<td class="n" id="stTot_${k}"></td></tr>`).join("");sumStock()}
-function sumStock(){for(const k of["M","W"])$("stTot_"+k).textContent=[...document.querySelectorAll(`[data-stock^="${k}_"]`)].reduce((a,i)=>a+(+i.value||0),0)}
-function readStock(){const o={M:{},W:{}};document.querySelectorAll("[data-stock]").forEach(i=>{const[k,z]=i.dataset.stock.split("_");if(i.value!=="")o[k][z]=Math.max(0,parseInt(i.value)||0)});return o}
+const unisex=()=>cfg.shirtMode==="unisex";
+function fillStock(mode){const st=cfg.stock||{},rows=(mode||cfg.shirtMode)==="unisex"?[["U","Unisex"]]:[["M","Men"],["W","Women"]];$("stockHead").innerHTML="<th></th>"+SIZES.map(z=>`<th class="n">${z}</th>`).join("")+'<th class="n">Total</th>';
+  $("stockBody").innerHTML=rows.map(([k,l])=>`<tr><th>${l}</th>${SIZES.map(z=>`<td><input type="number" min="0" inputmode="numeric" data-stock="${k}_${z}" value="${esc((st[k]||{})[z]??"")}" style="width:4.2em;min-height:44px;font-size:17px;padding:6px;border-radius:8px;border:1.5px solid var(--line);background:var(--bg)"></td>`).join("")}<td class="n" id="stTot_${k}"></td></tr>`).join("");sumStock()}
+function sumStock(){for(const k of["M","W","U"])if($("stTot_"+k))$("stTot_"+k).textContent=[...document.querySelectorAll(`[data-stock^="${k}_"]`)].reduce((a,i)=>a+(+i.value||0),0)}
+function readStock(){const o={...(cfg.stock||{})};["M","W","U"].forEach(k=>{if(document.querySelector(`[data-stock^="${k}_"]`))o[k]={}});document.querySelectorAll("[data-stock]").forEach(i=>{const[k,z]=i.dataset.stock.split("_");if(i.value!=="")o[k][z]=Math.max(0,parseInt(i.value)||0)});return o}
 const fmtFull=t=>t?new Date(t).toLocaleString("en-GB",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit",second:"2-digit"}):"";
 async function renderSync(){const box=$("syncBox"),rb=$("rrBox");if(!box||!sb)return;const s=syncState||{};
   rb.innerHTML=`<p style="margin:0 0 6px;font-weight:600;color:${s.at?(s.ok?"var(--ok)":"var(--red)"):"var(--mute)"}">${s.at?(s.ok?"✓ Last sync ":"! Last attempt failed ")+fmtFull(s.at):"No sync with RR14 yet"}${s.pending?` · <span style="color:#c77700">${s.pending} writes waiting for RR14</span>`:s.at?" · nothing waiting":""}</p>`+
@@ -713,6 +715,7 @@ $("signOut").onclick=async()=>{await release(device);ls.set("ck_device","");try{
 function alertBox(t){let b=$("setErr");if(!b){b=document.createElement("p");b.id="setErr";b.className="note warn";$("setForm").appendChild(b)}b.textContent=t}
 function readCols(){const f=$("setForm"),o={};for(const k of["solo","team"])o[k]={fg:f.elements[`col_${k}_fg`].value,bg:f.elements[`col_${k}_bg`].value,bg2:f.elements[`col_${k}_bg2`].value,grad:f.elements[`col_${k}_grad`].checked};return o}
 function prevCols(){const c=readCols();for(const k of["solo","team"])$("prev_"+k).style.cssText=bibCss(k,c[k])}
+$("shirtMode").addEventListener("change",e=>fillStock(e.target.value));
 $("setForm").addEventListener("input",e=>{if(e.target.dataset&&e.target.dataset.stock)sumStock();if(e.target.name&&e.target.name.startsWith("col_"))prevCols()});
 $("setLock").onclick=()=>{unlockUntil=0;closeSettings()};
 $("setCancel").onclick=()=>closeSettings();
@@ -981,10 +984,10 @@ $("qr").onchange=async e=>{const f=e.target.files[0];e.target.value="";if(!f)ret
 /* ---- package desk ---- */
 function groups(){const g={};P.forEach(p=>{if(p.sigId)(g[p.sigId]=g[p.sigId]||[]).push(p)});return Object.entries(g).map(([id,ms])=>({id,ms:ms.sort((a,b)=>a.bib-b.bib),by:byBib(ms[0].by)||ms[0],time:ms[0].sigTime,done:ms.every(m=>m.merch)}))}
 const UNDO=10000;let pend={};
-function shirtSum(ms){const by={M:{},W:{}};ms.forEach(m=>{const x=m.sex==="W"?"W":"M";by[x][m.size]=(by[x][m.size]||0)+1});
+function shirtSum(ms){const by={M:{},W:{},U:{}};ms.forEach(m=>{const x=unisex()?"U":m.sex==="W"?"W":"M";by[x][m.size]=(by[x][m.size]||0)+1});
   const ord=o=>[...SIZES.filter(z=>o[z]),...Object.keys(o).filter(z=>!SIZES.includes(z))];
   const grp=(o,k,l)=>{const z=ord(o);return z.length?`<span class="sg ${k}"><span class="sx">${l}</span><span class="chips">${z.map(x=>`<span class="sz" aria-label="${o[x]} ${l} ${esc(x||"no size")}"><i>${o[x]}×</i>${esc(x||"?")}</span>`).join("")}</span></span>`:""};
-  return grp(by.M,"m","Men")+grp(by.W,"w","Women")}
+  return grp(by.M,"m","Men")+grp(by.W,"w","Women")+grp(by.U,"u","Shirts")}
 const NEWMS=10000;
 /* Device as a tablet icon and its number ("Tablet 2" -> [icon] 2); other names stay as they are. */
 const TAB_SVG='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M11 18h2"/></svg>';
@@ -994,8 +997,8 @@ function renderMerch(){
   const L=G.filter(g=>!g.done).sort((a,b)=>((pend[a.id]?1:0)-(pend[b.id]?1:0))||(pend[a.id]&&pend[b.id]?pend[a.id]-pend[b.id]:0)||String(a.time).localeCompare(b.time));
   $("mcount").textContent=L.length?`${L.length} waiting · oldest first`:"";
   $("v-merch").classList.toggle("one",!!cfg.oneDesk);
-  if(cfg.oneDesk)$("mcount").textContent="This event hands out shirts at the bib desk, right after the signature."+(L.length?` ${L.length} older pickups still waiting here.`:"");
-  $("desk").innerHTML=L.length?L.map(g=>{const c=g.by,n=g.ms.length,mine=g.ms.some(m=>m.bib===c.bib),pd=pend[g.id];
+  if(cfg.oneDesk)$("mcount").textContent="This event hands out shirts at the bib desk, right after the signature.";
+  $("desk").innerHTML=cfg.oneDesk?"":L.length?L.map(g=>{const c=g.by,n=g.ms.length,mine=g.ms.some(m=>m.bib===c.bib),pd=pend[g.id];
     const what=!c.team?"Solo":`${esc(c.team)} · ${n===1&&mine?"own only":`for ${n}${mine?"":" (not self)"}`}`;
     const style=c.team?bibStyle(c):"";
     return `<div class="mrow${c.team?" team":""}${pd?" pend":""}" style="${style}">${pd?`<i class="fill" style="animation-delay:-${UNDO-(pd-now)}ms"></i>`:""}<span class="bb mb" style="${bibStyle(c)}">${c.bib}</span><span class="flag">${flag(c.nat)}</span><span class="mn"><span class="nm">${esc(fullName(c))}</span><span class="mw">${what}${n>1?` · ${g.ms.filter(m=>m.bib!==c.bib).map(m=>"#"+m.bib).join(" ")}`:""}</span></span><span class="sh">${shirtSum(g.ms)}</span>${pd?`<button class="ghost cbtn" data-undo="${esc(g.id)}">Undo · ${Math.max(1,Math.ceil((pd-now)/1000))}</button>`:`<button class="pri cbtn" data-give="${esc(g.id)}">Collected</button>`}</div>`}).join(""):`<div class="empty">Nobody is waiting. Bibs collected at check-in appear here automatically.</div>`;
@@ -1004,7 +1007,7 @@ function renderMerch(){
   const isNew=g=>{const t=Date.parse(g.ms[0].merchTime);return t&&now-t<NEWMS&&now-t>-5000},NW=H.filter(isNew),HH=H.filter(g=>!isNew(g));
   if(NW.length){const d=$("desk"),e=d.querySelector(".empty");if(e)e.remove();d.insertAdjacentHTML("afterbegin",NW.map(g=>{const c=g.by,n=g.ms.length;
     return `<div class="mrow newp"><span class="nbadge">NEW</span><span class="bb mb" style="${bibStyle(c)}">${c.bib}</span><span class="mn"><span class="nm">${esc(fullName(c))}</span><span class="mw">${c.team?esc(c.team)+(n>1?` · ${n} packages`:""):"Solo"}</span></span><span class="sh">${shirtSum(g.ms)}</span>${tabTag(g.ms[0].merchDesk)}</div>`}).join(""))}
-  else if(cfg.oneDesk&&!L.length)$("desk").innerHTML="";
+
   clearTimeout(window.nTick);if(NW.length)window.nTick=setTimeout(()=>{if(location.hash==="#merch")renderMerch()},Math.max(200,Math.min(...NW.map(g=>Date.parse(g.ms[0].merchTime)+NEWMS-now))+50));
   $("hist").innerHTML=HH.length?`<table><tbody>${HH.map(g=>`<tr><td class="n">${fmt(g.ms[0].merchTime)}</td><td><span class="bb" style="${bibStyle(g.by)}">${g.by.bib}</span></td><td>${esc(fullName(g.by))}${g.ms.length>1?` <span class="sub">+${g.ms.length-1} (${g.ms.filter(m=>m.bib!==g.by.bib).map(m=>"#"+m.bib).join(", ")})</span>`:""}</td><td>${g.ms.map(m=>esc(m.size)).join(" ")}</td><td class="sub">${tabTag(g.ms[0].merchDesk)}</td></tr>`).join("")}</tbody></table>`:'<p class="sub">No packages issued yet.</p>';
   clearTimeout(window.mTick);if(Object.keys(pend).length)window.mTick=setTimeout(tickPend,Math.max(50,Math.min(1000,Math.min(...Object.values(pend))-Date.now())));
@@ -1018,7 +1021,9 @@ function renderStats(){
   const k=[["Bibs collected",sig,n,"of all participants"],["Packages issued",mer,n,"shirts and bags"],["Waiting at package desk",sig-mer,sig,"signed, package not issued"],["Solo · team",`${solo.filter(p=>p.sigTime).length}/${solo.length} · ${team.filter(p=>p.sigTime).length}/${team.length}`,null,"bibs collected"]];
   $("kpis").innerHTML=k.map(([l,v,t,s])=>`<div class="kpi"><small>${l}</small><b>${v}${t!=null?`<span style="font-size:.45em;color:var(--mute)"> / ${t}</span>`:""}</b><small>${s}${t!=null?` · ${pc(v,t)}%`:""}</small>${t!=null?`<div class="meter"><i style="width:${pc(v,t)}%"></i></div>`:""}</div>`).join("");
   const st=cfg.stock||{},left=(k,z,iss)=>{const v=(st[k]||{})[z];return v==null?"—":`<span style="color:${v-iss<0?"var(--red)":v-iss<=3?"#c77700":"inherit"};font-weight:700">${v-iss}</span>`};
-  $("sizes").innerHTML=`<thead><tr><th>Size</th><th class="n">Men issued</th><th class="n">Men left</th><th class="n">Women issued</th><th class="n">Women left</th><th class="n">Waiting</th><th class="n">Not here</th></tr></thead><tbody>${SIZES.map(z=>{const a=P.filter(p=>p.size===z),iM=a.filter(p=>p.merch&&p.sex!=="W").length,iW=a.filter(p=>p.merch&&p.sex==="W").length;return `<tr><td><b>${z}</b></td><td class="n">${iM}</td><td class="n">${left("M",z,iM)}</td><td class="n">${iW}</td><td class="n">${left("W",z,iW)}</td><td class="n">${a.filter(p=>p.sigTime&&!p.merch).length}</td><td class="n">${a.filter(p=>!p.sigTime).length}</td></tr>`}).join("")}</tbody>`;
+  if(unisex()){const zs=[...SIZES.filter(z=>P.some(p=>p.size===z)||(st.U||{})[z]!=null)];
+    $("sizes").innerHTML=`<thead><tr><th>Size</th><th class="n">Stock</th><th class="n">Issued</th><th class="n">Left</th><th class="n">Waiting</th><th class="n">Not here</th><th class="n">Ordered</th></tr></thead><tbody>${zs.map(z=>{const a=P.filter(p=>p.size===z),i=a.filter(p=>p.merch).length,v=(st.U||{})[z];return `<tr><td><b>${z}</b></td><td class="n">${v??"—"}</td><td class="n">${i}</td><td class="n">${left("U",z,i)}</td><td class="n">${a.filter(p=>p.sigTime&&!p.merch).length}</td><td class="n">${a.filter(p=>!p.sigTime).length}</td><td class="n"${v!=null&&a.length>v?' style="color:var(--red);font-weight:700" title="More participants ordered this size than in stock"':""}>${a.length}</td></tr>`}).join("")}</tbody>`}
+  else $("sizes").innerHTML=`<thead><tr><th>Size</th><th class="n">Men issued</th><th class="n">Men left</th><th class="n">Women issued</th><th class="n">Women left</th><th class="n">Waiting</th><th class="n">Not here</th></tr></thead><tbody>${SIZES.map(z=>{const a=P.filter(p=>p.size===z),iM=a.filter(p=>p.merch&&p.sex!=="W").length,iW=a.filter(p=>p.merch&&p.sex==="W").length;return `<tr><td><b>${z}</b></td><td class="n">${iM}</td><td class="n">${left("M",z,iM)}</td><td class="n">${iW}</td><td class="n">${left("W",z,iW)}</td><td class="n">${a.filter(p=>p.sigTime&&!p.merch).length}</td><td class="n">${a.filter(p=>!p.sigTime).length}</td></tr>`}).join("")}</tbody>`;
   const hrs={};P.forEach(p=>{if(p.sigTime){const h=new Date(p.sigTime).getHours();hrs[h]=(hrs[h]||0)+1}});
   const keys=Object.keys(hrs).map(Number).sort((a,b)=>a-b),mx=Math.max(1,...Object.values(hrs));
   $("hours").innerHTML=keys.length?keys.map(h=>`<div class="hrow"><span>${String(h).padStart(2,"0")}:00</span><span class="t"><i style="width:${hrs[h]/mx*100}%"></i></span><span class="n">${hrs[h]}</span></div>`).join(""):'<p class="empty">No signatures yet.</p>';
