@@ -39,9 +39,9 @@ button.ghost.danger{color:var(--red);border-color:var(--red)}
 #camMsg{position:absolute;left:0;right:0;bottom:8vh;text-align:center;color:#fff;font-size:20px;margin:0}
 #camOv .camX{position:absolute;top:24px;right:24px;width:64px;height:64px;border-radius:50%;font-size:28px;background:#fff;color:#111;border:0}
 .sb[hidden],button[hidden]{display:none!important}
-#fsExit{position:fixed;right:226px;bottom:60px;z-index:70;display:flex;align-items:center;gap:8px;min-height:52px;padding:0 18px;border-radius:26px;border:0;background:var(--ink);color:var(--bg);font-weight:700;font-size:16px;box-shadow:0 6px 20px rgba(0,0,0,.3);opacity:.92}
+#fsExit{position:fixed;left:18px;bottom:60px;z-index:70;display:flex;align-items:center;gap:8px;min-height:52px;padding:0 18px;border-radius:26px;border:0;background:var(--ink);color:var(--bg);font-weight:700;font-size:16px;box-shadow:0 6px 20px rgba(0,0,0,.3);opacity:.92}
 #scanFab{position:fixed;right:226px;bottom:60px;z-index:15;display:flex;align-items:center;gap:10px;min-height:64px;padding:0 24px;border-radius:32px;border:0;background:var(--red);color:#fff;font-weight:700;font-size:19px;box-shadow:0 8px 24px rgba(0,0,0,.35)}
-body.fs #scanFab{bottom:128px}main{padding-bottom:150px!important}body.mini #scanFab,body.mini #fsExit{right:90px}
+main{padding-bottom:150px!important}body.mini #scanFab{right:90px}
 #shirtBibs{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;margin:14px 0 6px}#shirtBibs .bb{font:800 44px/1 "Barlow Condensed",sans-serif;min-width:2.2em}
 #shirtList{display:flex;flex-wrap:wrap;justify-content:center;gap:16px 22px;margin:18px 0 22px}
 #shirtList .ush{display:inline-flex;align-items:baseline;gap:6px;background:#fff;color:#141414;border:4px solid #141414;border-radius:18px;padding:10px 26px 8px;font:800 96px/1 "Barlow Condensed",sans-serif}
@@ -418,7 +418,7 @@ body.settings #gear{background:var(--red);color:#fff}
 "use strict";
 {
 let syncState=null,EV=null;
-const APP_VERSION="1.4.9";
+const APP_VERSION="1.5.0";
 const SIZES=["XS","S","M","L","XL","XXL"];
 const FIELDS=[["dob","Date of birth",'type="date"'],["nat","Nation",'autocapitalize="characters" placeholder="e.g. QATAR"'],["qid","QID",'inputmode="numeric"'],["ice","ICE person",'placeholder="Emergency contact name"'],["icePhone","ICE phone",'type="tel" placeholder="+974…"'],["email","Email",'type="email" placeholder="name@example.com"'],["phone","Phone",'type="tel" placeholder="+974…"']];
 const FK=FIELDS.map(f=>f[0]);
