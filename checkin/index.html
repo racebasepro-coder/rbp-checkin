@@ -86,10 +86,10 @@ label.btn input{position:absolute;opacity:0;width:1px;height:1px}
 .bb{border-radius:8px;padding:.08em .22em;display:inline-block;text-align:center}
 .swatch{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.swatch input[type=color]{width:56px;height:44px;padding:2px;border-radius:10px;border:1.5px solid var(--line);background:var(--bg)}.swatch label{display:flex;gap:8px;align-items:center;font-size:14px;font-weight:600}.prev{font:800 34px/1 "Barlow Condensed",sans-serif;padding:.08em .3em;border-radius:10px;min-width:3em;text-align:center}
 .bib .info{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px 20px;margin:0;padding:14px 0 0;border-top:1.5px solid var(--line)}
-.bib .info.r1{grid-template-columns:minmax(0,1.5fr) max-content minmax(0,1.2fr) max-content max-content}
-.bib .info.r2{grid-template-columns:minmax(0,1.5fr) max-content minmax(0,1.3fr)}
+/* equal empty space between the fields of a row */
+.bib .info.r1,.bib .info.r2{display:flex;justify-content:space-between;gap:10px 24px}.bib .info.r1>div,.bib .info.r2>div{flex:0 1 auto;min-width:0}
 .bib .info.r2 dd,.bib .info.r1 div+div dd{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.bib .info .fl{font-size:1.15em}
-@media(max-width:900px){.bib .info.r1,.bib .info.r2{grid-template-columns:repeat(auto-fit,minmax(min(100%,150px),1fr))}}
+@media(max-width:900px){.bib .info.r1,.bib .info.r2{flex-wrap:wrap;justify-content:flex-start}}
 @media(max-width:520px){.bib .info{grid-template-columns:minmax(0,1fr)}}
 .bib .info+.info{border-top:0;padding-top:10px}
 .bib .info dt{font-size:15px;color:var(--mute);font-weight:600;margin-bottom:2px}
@@ -378,7 +378,7 @@ body.settings #gear{background:var(--red);color:#fff}
 "use strict";
 {
 let syncState=null,EV=null;
-const APP_VERSION="1.4.2";
+const APP_VERSION="1.4.3";
 const SIZES=["XS","S","M","L","XL","XXL"];
 const FIELDS=[["dob","Date of birth",'type="date"'],["nat","Nation",'autocapitalize="characters" placeholder="e.g. QATAR"'],["qid","QID",'inputmode="numeric"'],["ice","ICE person",'placeholder="Emergency contact name"'],["icePhone","ICE phone",'type="tel" placeholder="+974…"'],["email","Email",'type="email" placeholder="name@example.com"'],["phone","Phone",'type="tel" placeholder="+974…"']];
 const FK=FIELDS.map(f=>f[0]);
