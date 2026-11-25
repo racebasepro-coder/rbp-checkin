@@ -177,6 +177,10 @@ label.btn input{position:absolute;opacity:0;width:1px;height:1px}
 .mrow .flag{font-size:30px}.mrow .mn{display:grid;min-width:0}.mrow .nm{font-size:21px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .mrow .mw{font-size:15px;color:var(--mute);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .mrow .sh{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:flex-end}
+.sline{display:inline-flex;align-items:baseline;gap:6px;white-space:nowrap;font:800 30px/1 "Barlow Condensed",sans-serif}
+.sline .sx{font:800 13px/1 Barlow,sans-serif;letter-spacing:.08em;text-transform:uppercase;opacity:.75;margin-right:2px}.sline.w .sx{color:#b0126b}.mrow.team .sline .sx{color:inherit}
+.sline .sq i{font:700 20px/1 "Barlow Condensed",sans-serif;font-style:normal;opacity:.7;margin-right:2px}.sline .sc{opacity:.5;margin-left:-4px}
+.mrow .sh{flex-wrap:nowrap!important;overflow:hidden}
 .sg{display:grid;gap:4px}.sg>.sx{font:800 13px/1 Barlow,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:var(--mute)}
 .sg .chips{display:flex;flex-wrap:wrap;gap:6px}
 .sz{display:inline-flex;align-items:baseline;gap:3px;background:#fff;color:#141414;border:2.5px solid #141414;border-radius:10px;padding:5px 11px 4px;font:800 38px/1 "Barlow Condensed",sans-serif;box-shadow:0 1px 0 #0002}
@@ -206,6 +210,8 @@ label.btn input{position:absolute;opacity:0;width:1px;height:1px}
 .bar{display:flex;gap:10px;flex-wrap:wrap;align-items:center}.bar .search{flex:1 1 280px}
 .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,200px),1fr));gap:12px}
 .kpi{background:var(--paper);border:1.5px solid var(--line);border-radius:14px;padding:14px 16px}
+.kpi .st2{display:flex;gap:18px;white-space:nowrap;font-size:clamp(28px,3.2vw,40px)}.kpi .st2>span{display:inline-flex;align-items:baseline;gap:5px}
+.kpi .st2 small{font:700 13px/1 Barlow,sans-serif;text-transform:uppercase;letter-spacing:.06em;color:var(--mute)}.kpi .st2 em{font-style:normal;font-size:.55em;color:var(--mute)}
 .kpi b{display:block;font:800 clamp(40px,5vw,56px)/1 "Barlow Condensed",sans-serif}
 .kpi small{color:var(--mute);font-size:14px}
 .meter{height:10px;background:var(--bg);border-radius:6px;margin-top:10px;overflow:hidden}.meter i{display:block;height:100%;background:var(--red)}
@@ -469,7 +475,7 @@ body.settings #gear{background:var(--red);color:#fff}
 "use strict";
 {
 let syncState=null,EV=null;
-const APP_VERSION="1.8.0";
+const APP_VERSION="1.8.1";
 const SIZES=["XS","S","M","L","XL","XXL"];
 const FIELDS=[["dob","Date of birth",'type="date"'],["nat","Nation",'autocapitalize="characters" placeholder="e.g. QATAR"'],["qid","QID",'inputmode="numeric"'],["ice","ICE person",'placeholder="Emergency contact name"'],["icePhone","ICE phone",'type="tel" placeholder="+974…"'],["email","Email",'type="email" placeholder="name@example.com"'],["phone","Phone",'type="tel" placeholder="+974…"']];
 const FK=FIELDS.map(f=>f[0]);
@@ -986,7 +992,8 @@ function groups(){const g={};P.forEach(p=>{if(p.sigId)(g[p.sigId]=g[p.sigId]||[]
 const UNDO=10000;let pend={};
 function shirtSum(ms){const by={M:{},W:{},U:{}};ms.forEach(m=>{const x=unisex()?"U":m.sex==="W"?"W":"M";by[x][m.size]=(by[x][m.size]||0)+1});
   const ord=o=>[...SIZES.filter(z=>o[z]),...Object.keys(o).filter(z=>!SIZES.includes(z))];
-  const grp=(o,k,l)=>{const z=ord(o);return z.length?`<span class="sg ${k}"><span class="sx">${l}</span><span class="chips">${z.map(x=>`<span class="sz" aria-label="${o[x]} ${l} ${esc(x||"no size")}"><i>${o[x]}×</i>${esc(x||"?")}</span>`).join("")}</span></span>`:""};
+  // One compact line per cut: "MEN 2× M, 3× L" (unisex: just "2× M, 3× L").
+  const grp=(o,k,l)=>{const z=ord(o);return z.length?`<span class="sline ${k}">${k==="u"?"":`<span class="sx">${l}</span>`}${z.map(x=>`<span class="sq" aria-label="${o[x]} ${l} ${esc(x||"no size")}"><i>${o[x]}×</i>${esc(x||"?")}</span>`).join('<span class="sc">,</span>')}</span>`:""};
   return grp(by.M,"m","Men")+grp(by.W,"w","Women")+grp(by.U,"u","Shirts")}
 const NEWMS=10000;
 /* Device as a tablet icon and its number ("Tablet 2" -> [icon] 2); other names stay as they are. */
@@ -1018,7 +1025,7 @@ async function give(id,on){const t=on?new Date().toISOString():null;try{await RR
 /* ---- statistics ---- */
 function renderStats(){
   const n=P.length,sig=P.filter(p=>p.sigTime).length,mer=P.filter(p=>p.merch).length,solo=P.filter(p=>!p.team),team=P.filter(p=>p.team),pc=(a,b)=>b?Math.round(a/b*100):0;
-  const k=[["Bibs collected",sig,n,"of all participants"],["Packages issued",mer,n,"shirts and bags"],["Waiting at package desk",sig-mer,sig,"signed, package not issued"],["Solo · team",`${solo.filter(p=>p.sigTime).length}/${solo.length} · ${team.filter(p=>p.sigTime).length}/${team.length}`,null,"bibs collected"]];
+  const k=[["Bibs collected",sig,n,"of all participants"],["Packages issued",mer,n,"shirts and bags"],["Waiting at package desk",sig-mer,sig,"signed, package not issued"],["Solo · team",`<span class="st2"><span><small>Solo</small>${solo.filter(p=>p.sigTime).length}<em>/${solo.length}</em></span><span><small>Team</small>${team.filter(p=>p.sigTime).length}<em>/${team.length}</em></span></span>`,null,"bibs collected"]];
   $("kpis").innerHTML=k.map(([l,v,t,s])=>`<div class="kpi"><small>${l}</small><b>${v}${t!=null?`<span style="font-size:.45em;color:var(--mute)"> / ${t}</span>`:""}</b><small>${s}${t!=null?` · ${pc(v,t)}%`:""}</small>${t!=null?`<div class="meter"><i style="width:${pc(v,t)}%"></i></div>`:""}</div>`).join("");
   const st=cfg.stock||{},left=(k,z,iss)=>{const v=(st[k]||{})[z];return v==null?"—":`<span style="color:${v-iss<0?"var(--red)":v-iss<=3?"#c77700":"inherit"};font-weight:700">${v-iss}</span>`};
   if(unisex()){const zs=[...SIZES.filter(z=>P.some(p=>p.size===z)||(st.U||{})[z]!=null)];
