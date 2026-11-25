@@ -191,6 +191,9 @@ label.btn input{position:absolute;opacity:0;width:1px;height:1px}
 @media(prefers-reduced-motion:reduce){.mrow .fill{animation-duration:10s}}.mrow.team .cbtn.ghost{background:#fff;color:#141414}
 @media(max-width:700px){.mrow{grid-template-columns:auto minmax(0,1fr) auto}.mrow .flag{display:none}.mrow .sh{grid-column:1/-1;grid-row:2}}
 .mhist{flex:0 0 30%;min-height:0;overflow:auto;background:light-dark(#e4e4df,#262626);border-radius:14px;padding:12px 16px;color:light-dark(#3a3a37,#cfcfca)}
+/* One desk (bib + shirts together): the issued list fills the tab; older waiting pickups stay on top, small. */
+#v-merch.one .mtop{flex:0 0 auto;max-height:35%}#v-merch.one .mhist{flex:1 1 auto}
+#v-merch.one .mhist td{font-size:20px;padding:10px 8px}#v-merch.one .mhist .bb{font-size:22px}#v-merch.one .mhist h3{font-size:24px}
 .mhist h3{margin:0 0 6px;font:700 20px/1.1 "Barlow Condensed",sans-serif}
 .mhist td{border-bottom:1px solid light-dark(#d2d2cc,#383838);padding:7px 6px;font-size:16px}
 .mhist .bb{font:800 18px/1 "Barlow Condensed",sans-serif}
@@ -459,7 +462,7 @@ body.settings #gear{background:var(--red);color:#fff}
 "use strict";
 {
 let syncState=null,EV=null;
-const APP_VERSION="1.7.7";
+const APP_VERSION="1.7.8";
 const SIZES=["XS","S","M","L","XL","XXL"];
 const FIELDS=[["dob","Date of birth",'type="date"'],["nat","Nation",'autocapitalize="characters" placeholder="e.g. QATAR"'],["qid","QID",'inputmode="numeric"'],["ice","ICE person",'placeholder="Emergency contact name"'],["icePhone","ICE phone",'type="tel" placeholder="+974…"'],["email","Email",'type="email" placeholder="name@example.com"'],["phone","Phone",'type="tel" placeholder="+974…"']];
 const FK=FIELDS.map(f=>f[0]);
@@ -980,6 +983,7 @@ function renderMerch(){
   const G=groups(),now=Date.now();
   const L=G.filter(g=>!g.done).sort((a,b)=>((pend[a.id]?1:0)-(pend[b.id]?1:0))||(pend[a.id]&&pend[b.id]?pend[a.id]-pend[b.id]:0)||String(a.time).localeCompare(b.time));
   $("mcount").textContent=L.length?`${L.length} waiting · oldest first`:"";
+  $("v-merch").classList.toggle("one",!!cfg.oneDesk);
   if(cfg.oneDesk)$("mcount").textContent="This event hands out shirts at the bib desk, right after the signature."+(L.length?` ${L.length} older pickups still waiting here.`:"");
   $("desk").innerHTML=L.length?L.map(g=>{const c=g.by,n=g.ms.length,mine=g.ms.some(m=>m.bib===c.bib),pd=pend[g.id];
     const what=!c.team?"Solo":`${esc(c.team)} · ${n===1&&mine?"own only":`for ${n}${mine?"":" (not self)"}`}`;
