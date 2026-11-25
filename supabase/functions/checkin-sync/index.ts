@@ -98,7 +98,7 @@ async function pull(ev: string, cfg: Record<string, any>, LIST_URL?: string | nu
       sex: /^(F|W|Ž|Z)/.test(sex) ? "W" : sex ? "M" : null,
       nation: g("nation").toUpperCase(), dob, yob,
       age_group: g("age_group"), shirt_size: g("shirt_size").toUpperCase(), qid: g("qid"), email: g("email"),
-      phone: g("phone"), ice_name: g("ice_name"), ice_phone: g("ice_phone"), rr_synced_at: now,
+      phone: g("phone"), ice_name: g("ice_name"), ice_phone: g("ice_phone"), rr_synced_at: now, gone_at: null,
     };
   // Bibs without a name are empty slots in RR14 (not yet sold or assigned): skip them.
   }).filter((p) => Number.isFinite(p.bib) && p.bib > 0 && (p.first_name || p.last_name) && !hold.has(p.bib));
@@ -107,7 +107,17 @@ async function pull(ev: string, cfg: Record<string, any>, LIST_URL?: string | nu
     const { error } = await sb.from("checkin_participants").upsert(out.slice(i, i + 500), { onConflict: "event_id,bib" });
     if (error) throw error;
   }
-  return { pulled: out.length, rows: rows.length, held: hold.size, columns: [...present].slice(0, 30) };
+  // Bibs no longer on the RR14 list (removed from the contest, deleted) are marked gone, never deleted.
+  // Safety: only when this pull looks complete (at least half of the bibs we know), so a broken list hides nothing.
+  let gone = 0;
+  const { count: known } = await sb.from("checkin_participants").select("bib", { count: "exact", head: true }).eq("event_id", ev).is("gone_at", null);
+  if (out.length && out.length >= (known ?? 0) / 2) {
+    const seen = new Set([...out.map((p) => p.bib), ...hold]);
+    const { data: all } = await sb.from("checkin_participants").select("bib").eq("event_id", ev).is("gone_at", null);
+    const miss = (all ?? []).map((r) => r.bib).filter((b) => !seen.has(b));
+    if (miss.length) { await sb.from("checkin_participants").update({ gone_at: now }).eq("event_id", ev).in("bib", miss); gone = miss.length; }
+  }
+  return { pulled: out.length, rows: rows.length, held: hold.size, gone, columns: [...present].slice(0, 30) };
 }
 
 // App key -> our read column, so a write uses the column name this event's RR14 list really has (e.g. CellPhone).
