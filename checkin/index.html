@@ -4,6 +4,13 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Event check-in</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="Check-in">
+<meta name="theme-color" content="#141414">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
@@ -208,6 +215,7 @@ body.settings #gear{background:var(--red);color:#fff}
     <button type="button" class="chip lbl" id="evName" title="Change event" style="font-weight:700;opacity:1;background:none;border:0;color:inherit;text-align:left;cursor:pointer;text-decoration:underline dotted"></button>
     <span class="chip lbl" id="mode">Connecting…</span>
     <button id="tabBtn" class="sb" title="Change device"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="2.5" width="14" height="19" rx="2"/><path d="M11 18.5h2"/></svg><span class="lbl" id="tabLbl">Tablet ?</span><span class="mini" id="tabMini"></span></button>
+    <button id="fsBtn" class="sb" title="Full screen"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/></svg><span class="lbl" id="fsLbl">Full screen</span></button>
     <button id="gear" class="sb" title="RR14 settings"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg><span class="lbl">Settings</span></button>
     <button id="collapse" class="sb" title="Collapse menu" aria-expanded="true"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg><span class="lbl">Collapse</span></button>
   </div>
@@ -300,6 +308,15 @@ body.settings #gear{background:var(--red);color:#fff}
     <div class="acts" style="justify-content:center"><button type="button" class="ghost" id="qrCopy">Copy link</button><button type="button" class="pri" id="qrClose">Done</button></div>
   </div>
 </div>
+<div class="ov" id="fsOv" role="dialog" aria-modal="true" aria-labelledby="fsH">
+  <div class="sheet" style="width:min(520px,100%)">
+    <h2 id="fsH">Full screen on iPad</h2>
+    <p><b>Best: add it to the Home Screen.</b> In Safari tap the Share button <span aria-hidden="true">⬆︎</span>, then <b>Add to Home Screen</b>, then <b>Add</b>. Open Check-in from the new icon: it runs full screen, without the Safari bar, every time.</p>
+    <p class="sub">The Home Screen app keeps its own sign-in, so enter the staff PIN once more there (or use the setup QR in Safari before adding it).</p>
+    <p class="sub" id="fsNote"></p>
+    <div class="acts"><button type="button" class="ghost" id="fsClose">Close</button><button type="button" class="pri" id="fsNow">Full screen now</button></div>
+  </div>
+</div>
 <div class="ov" id="authOv" role="dialog" aria-modal="true" aria-labelledby="authH">
   <form class="sheet" id="authForm" style="width:min(440px,100%)">
     <h2 id="authH">Set up this iPad</h2>
@@ -378,7 +395,7 @@ body.settings #gear{background:var(--red);color:#fff}
 "use strict";
 {
 let syncState=null,EV=null;
-const APP_VERSION="1.4.3";
+const APP_VERSION="1.4.4";
 const SIZES=["XS","S","M","L","XL","XXL"];
 const FIELDS=[["dob","Date of birth",'type="date"'],["nat","Nation",'autocapitalize="characters" placeholder="e.g. QATAR"'],["qid","QID",'inputmode="numeric"'],["ice","ICE person",'placeholder="Emergency contact name"'],["icePhone","ICE phone",'type="tel" placeholder="+974…"'],["email","Email",'type="email" placeholder="name@example.com"'],["phone","Phone",'type="tel" placeholder="+974…"']];
 const FK=FIELDS.map(f=>f[0]);
@@ -498,6 +515,17 @@ function watchDevices(){
 }
 $("tabBtn").onclick=askDevice;
 function setMini(on){document.body.classList.toggle("mini",on);$("collapse").setAttribute("aria-expanded",String(!on));$("collapse").title=on?"Expand menu":"Collapse menu";ls.set("ck_mini",on?"1":"0")}
+/* Full screen: the Home Screen app is full screen by itself; in Safari the iPad can go full screen for this visit. */
+const standalone=()=>navigator.standalone===true||!!(window.matchMedia&&matchMedia("(display-mode: standalone),(display-mode: fullscreen)").matches);
+const fsEl=()=>document.fullscreenElement||document.webkitFullscreenElement;
+const fsCan=!!(document.documentElement.requestFullscreen||document.documentElement.webkitRequestFullscreen);
+function fsLabel(){const on=!!fsEl();$("fsLbl").textContent=on?"Exit full screen":"Full screen";$("fsBtn").title=on?"Exit full screen":"Full screen";$("fsBtn").hidden=standalone()&&!on}
+async function fsEnter(){const d=document.documentElement;try{if(d.requestFullscreen)await d.requestFullscreen({navigationUI:"hide"});else if(d.webkitRequestFullscreen)d.webkitRequestFullscreen();return true}catch(e){return false}}
+function fsExit(){if(document.exitFullscreen)document.exitFullscreen().catch(()=>{});else if(document.webkitExitFullscreen)document.webkitExitFullscreen()}
+$("fsBtn").onclick=()=>{if(fsEl()){fsExit();return}$("fsNow").hidden=!fsCan;$("fsNote").textContent=fsCan?"Full screen now works until Safari leaves it (it may ask again after a reload).":"This Safari cannot go full screen from a page: use Add to Home Screen.";$("fsOv").classList.add("on")};
+$("fsClose").onclick=()=>$("fsOv").classList.remove("on");
+$("fsNow").onclick=async()=>{$("fsOv").classList.remove("on");if(!(await fsEnter())){$("fsNote").textContent="Safari refused full screen here: use Add to Home Screen.";$("fsNow").hidden=true;$("fsOv").classList.add("on")}};
+document.addEventListener("fullscreenchange",fsLabel);document.addEventListener("webkitfullscreenchange",fsLabel);fsLabel();
 $("collapse").onclick=()=>{setMini(!document.body.classList.contains("mini"))};
 setMini(ls.get("ck_mini")==="1"||(ls.get("ck_mini")==null&&innerWidth<900));
 
