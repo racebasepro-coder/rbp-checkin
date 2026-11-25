@@ -39,7 +39,7 @@ Deno.serve(async (req) => {
   const { data: who } = await sb.auth.getUser(jwt);
   if (!who?.user) return json({ error: "Sign in first." }, 401);
 
-  const { action, pin, token, value, deviceId, eventId, name, listUrl, writeUrl, copy, copyFrom, sigId, bib, a, b, device } = await req.json().catch(() => ({}));
+  const { action, pin, token, value, deviceId, eventId, name, listUrl, writeUrl, copy, copyFrom, sigId, bib, a, b, device, fields } = await req.json().catch(() => ({}));
   const { data: row } = await sb.from("checkin_secret").select("pin_hash").maybeSingle();
   const hash = row?.pin_hash as string | null;
 
@@ -55,6 +55,13 @@ Deno.serve(async (req) => {
     const A = Number(a), B = Number(b);
     if (!eventId || !Number.isInteger(A) || !Number.isInteger(B)) return json({ error: "Pick two bibs" }, 400);
     const { error } = await sb.rpc("checkin_swap", { p_event: eventId, p_a: A, p_b: B, p_device: String(device ?? "") });
+    return error ? json({ error: error.message }, 400) : json({ ok: true });
+  }
+  // Change tab: replace a participant's data (logged in checkin_changes, pushed to RR14 via outbox).
+  if (action === "change") {
+    const B = Number(bib);
+    if (!eventId || !Number.isInteger(B) || !fields || typeof fields !== "object") return json({ error: "Pick a bib" }, 400);
+    const { error } = await sb.rpc("checkin_change", { p_event: eventId, p_bib: B, p_fields: fields, p_device: String(device ?? "") });
     return error ? json({ error: error.message }, 400) : json({ ok: true });
   }
   if (!(await valid(token))) return json({ error: "Locked. Enter the RBP admin PIN." }, 401);

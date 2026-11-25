@@ -51,6 +51,7 @@ body.fs main{padding-top:calc(20px + 5vh)!important}body.fs aside{padding-top:5v
 #shirtOv .sheet{width:min(820px,100%)!important}#shirtH{font-size:34px}#shirtSub{font-size:20px}#shirtDone{min-height:64px;font-size:20px;padding:0 34px}
 .swl{list-style:none;margin:8px 0 0;padding:0;display:grid;gap:6px}.swl button{width:100%;text-align:start;display:flex;gap:10px;align-items:center;min-height:52px;border:1.5px solid var(--line);border-radius:12px;background:var(--paper);color:inherit;padding:0 12px;font-size:17px}
 .swt{width:100%}.swt td,.swt th{font-size:18px;padding:10px 8px}.swt td.d{color:var(--red);font-weight:700}.swt th{color:var(--mute);font-weight:600;text-align:start}
+.qside{display:grid;gap:8px;align-content:start}.qside img{width:100%;border-radius:10px;border:1.5px solid var(--line);display:none}.qside img[src]{display:block}.qbtn{justify-content:center}
 #doneOv{position:fixed;inset:0;z-index:60;display:none;place-items:center;background:rgba(0,0,0,.35)}#doneOv.on{display:grid}
 #doneOv .box{background:var(--ok);color:#fff;border-radius:22px;padding:34px 48px;text-align:center;max-width:min(560px,90vw);box-shadow:0 20px 60px rgba(0,0,0,.3);position:relative;overflow:hidden}
 #doneOv .tick{font-size:64px;line-height:1}#doneOv h2{margin:10px 0 6px;font-size:30px}#doneOv p{margin:0;font-size:19px;opacity:.95}
@@ -224,7 +225,7 @@ body.settings #gear{background:var(--red);color:#fff}
     <a href="#checkin" data-v="checkin" title="Bib pickup"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="6.5" cy="8" r=".6"/><circle cx="17.5" cy="8" r=".6"/><path d="M9 15v-5l-1.5 1.2M13 10h3l-2.5 5"/></svg><span class="lbl">Bib pickup</span></a>
     <a href="#merch" data-v="merch" title="Packages"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 8h14l-1 12H6z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg><span class="lbl">Packages</span></a>
     <a href="#stats" data-v="stats" title="Statistics"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg><span class="lbl">Statistics</span></a>
-    <a href="#swap" data-v="swap" title="Swap participants"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 4 3 8l4 4M3 8h14M17 20l4-4-4-4M21 16H7"/></svg><span class="lbl">Swap</span></a>
+    <a href="#swap" data-v="swap" title="Change participant"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 4 3 8l4 4M3 8h14M17 20l4-4-4-4M21 16H7"/></svg><span class="lbl">Change</span></a>
   </nav>
   <div class="foot">
     <button type="button" class="chip lbl" id="evName" title="Change event" style="font-weight:700;opacity:1;background:none;border:0;color:inherit;text-align:left;cursor:pointer;text-decoration:underline dotted"></button>
@@ -260,14 +261,11 @@ body.settings #gear{background:var(--red);color:#fff}
     </div>
   </section>
   <section class="view" id="v-swap">
-    <h2 style="margin:0 0 4px">Swap participants</h2>
-    <p class="sub" style="margin:0 0 14px">Moves all personal data of two bibs into each other: name, team, gender, nation, date of birth, QID, contacts, ICE and shirt size. Bib numbers, pickup and package status stay where they are. RR14 gets both bibs within 30 seconds.</p>
-    <div class="two" id="swapPick">
-      <div class="panel"><h3>Bib A</h3><input class="search" id="swapQa" type="search" placeholder="Bib or name" autocomplete="off"><ul class="swl" id="swapLa"></ul></div>
-      <div class="panel"><h3>Bib B</h3><input class="search" id="swapQb" type="search" placeholder="Bib or name" autocomplete="off"><ul class="swl" id="swapLb"></ul></div>
-    </div>
-    <div class="panel" id="swapCmp" hidden></div>
-    <p id="swapMsg" class="small" style="min-height:1.5em"></p>
+    <h2 style="margin:0 0 4px">Change participant</h2>
+    <p class="sub" style="margin:0 0 14px">A bib goes to another person: pick the bib, photograph the new person's QID (both sides) or type the data, then save. RR14 gets the new data within 30 seconds. Pickup and package status stay on the bib.</p>
+    <div class="panel"><h3>Bib</h3><input class="search" id="chQ" type="search" placeholder="Bib or name" autocomplete="off"><ul class="swl" id="chL"></ul></div>
+    <div class="panel" id="chForm" hidden></div>
+    <p id="chMsg" class="small" style="min-height:1.5em"></p>
   </section>
   <section class="view" id="v-stats">
     <div class="kpis" id="kpis"></div>
@@ -344,6 +342,26 @@ body.settings #gear{background:var(--red);color:#fff}
   </div>
 </div>
 <button type="button" id="scanFab" title="Scan QR"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 7V3h4M17 3h4v4M21 17v4h-4M7 21H3v-4"/><rect x="8" y="8" width="8" height="8"/></svg>Scan QR</button>
+<div class="ov" id="qidOv" role="dialog" aria-modal="true" aria-labelledby="qidH">
+  <div class="sheet" style="width:min(720px,100%)">
+    <h2 id="qidH">QID photos</h2>
+    <p class="sub">Photograph both sides of the QID. The iPad reads the card (first use loads the reader, about 10 MB); check the fields before saving.</p>
+    <div class="two" style="margin:10px 0">
+      <div class="qside"><b>Front</b><label class="btn qbtn">Take front photo<input type="file" accept="image/*" capture="environment" id="qidF"></label><img id="qidFi" alt=""></div>
+      <div class="qside"><b>Back</b><label class="btn qbtn">Take back photo<input type="file" accept="image/*" capture="environment" id="qidB"></label><img id="qidBi" alt=""></div>
+    </div>
+    <p class="small" id="qidState"></p>
+    <div class="form" id="qidFields">
+      <label>QID<input name="qid" inputmode="numeric" maxlength="11"></label>
+      <label>Date of birth<input name="dob" type="date"></label>
+      <label>Nation<input name="nat" autocapitalize="characters"></label>
+      <label>QID expiry<input name="exp" type="date"></label>
+      <label class="wide">Name on card<input name="name" readonly></label>
+    </div>
+    <p class="note warn" id="qidMsg" hidden></p>
+    <div class="acts"><button type="button" class="ghost" id="qidCancel">Cancel</button><button type="button" class="pri" id="qidSave" disabled>Use these values</button></div>
+  </div>
+</div>
 <div class="ov" id="fsOv" role="dialog" aria-modal="true" aria-labelledby="fsH">
   <div class="sheet" style="width:min(520px,100%)">
     <h2 id="fsH">Full screen on iPad</h2>
@@ -433,7 +451,7 @@ body.settings #gear{background:var(--red);color:#fff}
 "use strict";
 {
 let syncState=null,EV=null;
-const APP_VERSION="1.6.0";
+const APP_VERSION="1.7.0";
 const SIZES=["XS","S","M","L","XL","XXL"];
 const FIELDS=[["dob","Date of birth",'type="date"'],["nat","Nation",'autocapitalize="characters" placeholder="e.g. QATAR"'],["qid","QID",'inputmode="numeric"'],["ice","ICE person",'placeholder="Emergency contact name"'],["icePhone","ICE phone",'type="tel" placeholder="+974…"'],["email","Email",'type="email" placeholder="name@example.com"'],["phone","Phone",'type="tel" placeholder="+974…"']];
 const FK=FIELDS.map(f=>f[0]);
@@ -796,27 +814,74 @@ function showShirts(p,ms,issued){
   $("shirtList").innerHTML=zs.map(z=>`<span class="ush"><i>${n[z]}×</i>${esc(z==="?"?"no size":z)}</span>`).join("");$("shirtWarn").hidden=!!issued;$("shirtOv").classList.add("on");setTimeout(()=>$("shirtDone").focus(),50)}
 $("shirtDone").onclick=()=>{$("shirtOv").classList.remove("on");$("q").focus()};
 $("scanFab").onclick=()=>$("scanBtn").click();
-/* ---- Swap tab: two bibs exchange all personal data ---- */
-const swap={a:null,b:null};
-const SWF=[["Name",p=>fullName(p)],["Team",p=>p.team||"Solo"],["Gender",p=>p.sex==="W"?"Women":p.sex==="M"?"Men":""],["Nation",p=>p.nat?`${flag(p.nat)} ${natCode(p.nat)}`:""],["Date of birth",p=>p.dob?fdate(p.dob):""],["QID",p=>p.qid],["Email",p=>p.email],["Phone",p=>p.phone],["ICE contact",p=>[p.ice,p.icePhone].filter(Boolean).join(" · ")],["T-shirt",p=>p.size],["Category",p=>p.ageGroup]];
-function swapFind(t){t=t.trim().toLowerCase();if(!t)return[];return P.filter(p=>String(p.bib).startsWith(t)||fullName(p).toLowerCase().includes(t)||(p.team||"").toLowerCase().includes(t)).sort((x,y)=>x.bib-y.bib).slice(0,6)}
-function swapList(k){const q=$(k==="a"?"swapQa":"swapQb"),L=$(k==="a"?"swapLa":"swapLb"),cur=swap[k]&&byBib(swap[k]);
-  const rows=q.value.trim()?swapFind(q.value):cur?[cur]:[];
-  L.innerHTML=rows.map(p=>`<li><button type="button" data-sw="${k}" data-bib="${p.bib}" ${swap[k]===p.bib?'style="border-color:var(--red);border-width:3px"':""}><span class="bb" style="${bibStyle(p)}">${p.bib}</span><span class="flag">${flag(p.nat)}</span><span>${esc(fullName(p))}<br><span class="sub">${p.team?esc(p.team):"Solo"}</span></span></button></li>`).join("")||(q.value.trim()?'<li class="sub">No match.</li>':"")}
-function renderSwap(){swapList("a");swapList("b");const A=swap.a&&byBib(swap.a),B=swap.b&&byBib(swap.b),c=$("swapCmp");
-  if(!A||!B||A.bib===B.bib){c.hidden=true;c.innerHTML="";return}
-  c.hidden=false;c.innerHTML=`<h3>Check before swapping</h3><div class="scroll"><table class="swt"><thead><tr><th></th><th>Bib ${A.bib} gets</th><th>Bib ${B.bib} gets</th></tr></thead><tbody>${SWF.map(([l,f])=>{const x=f(B)||"",y=f(A)||"",d=x!==y;return `<tr><th>${l}</th><td class="${d?"d":""}">${esc(x)||"—"}</td><td class="${d?"d":""}">${esc(y)||"—"}</td></tr>`}).join("")}</tbody></table></div>
-  <p class="sub">Red = changes. Pickup and package status stay on the bib numbers.</p><div class="acts"><button type="button" class="ghost" id="swapClear">Clear</button><button type="button" class="pri" id="swapGo">Swap all data</button></div>`;
-  $("swapClear").onclick=()=>{swap.a=swap.b=null;$("swapQa").value=$("swapQb").value="";$("swapMsg").textContent="";renderSwap()};
-  $("swapGo").onclick=async e=>{const b=e.currentTarget;if(b.dataset.sure!=="1"){b.dataset.sure="1";b.textContent=`Tap again: swap #${A.bib} and #${B.bib}`;setTimeout(()=>{if(b.isConnected){b.dataset.sure="";b.textContent="Swap all data"}},4000);return}
-    b.disabled=true;b.textContent="Swapping…";
-    try{await admin("swap",{eventId:EV.id,a:A.bib,b:B.bib,device:device||""})}catch(err){$("swapMsg").textContent="Not swapped: "+err.message;b.disabled=false;b.textContent="Swap all data";b.dataset.sure="";return}
-    const keep=["bib","sigId","sigTime","sigUrl","scope","by","desk","qv","merch","merchTime","merchDesk"],ca={...A},cb={...B};
-    Object.keys(ca).forEach(k=>{if(!keep.includes(k)){A[k]=cb[k];B[k]=ca[k]}});
-    $("swapMsg").textContent=`Swapped: #${A.bib} is now ${fullName(A)}, #${B.bib} is now ${fullName(B)}. RR14 gets both within 30 seconds.`;
-    swap.a=swap.b=null;$("swapQa").value=$("swapQb").value="";renderSwap()}}
-$("swapQa").oninput=()=>swapList("a");$("swapQb").oninput=()=>swapList("b");
-$("v-swap").addEventListener("click",e=>{const b=e.target.closest("[data-sw]");if(!b)return;const k=b.dataset.sw;swap[k]=+b.dataset.bib;$(k==="a"?"swapQa":"swapQb").value="";$("swapMsg").textContent="";renderSwap()});
+/* ---- Change tab: a bib gets another person (typed, or read from the QID) ---- */
+let chBib=null;
+const CHF=[["first","First name",""],["last","Last name",""],["sex","Gender","sel"],["nat","Nation",'autocapitalize="characters"'],["dob","Date of birth",'type="date"'],["qid","QID",'inputmode="numeric" maxlength="11"'],["email","Email",'type="email"'],["phone","Phone",'inputmode="tel"'],["ice","ICE person",""],["icePhone","ICE phone",'inputmode="tel"'],["size","T-shirt","size"]];
+function chFind(t){t=t.trim().toLowerCase();if(!t)return[];return P.filter(p=>String(p.bib).startsWith(t)||fullName(p).toLowerCase().includes(t)||(p.team||"").toLowerCase().includes(t)).sort((x,y)=>x.bib-y.bib).slice(0,6)}
+function chList(){const q=$("chQ"),cur=chBib&&byBib(chBib),rows=q.value.trim()?chFind(q.value):cur?[cur]:[];
+  $("chL").innerHTML=rows.map(p=>`<li><button type="button" data-ch="${p.bib}" ${chBib===p.bib?'style="border-color:var(--red);border-width:3px"':""}><span class="bb" style="${bibStyle(p)}">${p.bib}</span><span class="flag">${flag(p.nat)}</span><span>${esc(fullName(p))}<br><span class="sub">${p.team?esc(p.team):"Solo"}</span></span></button></li>`).join("")||(q.value.trim()?'<li class="sub">No match.</li>':"")}
+function renderSwap(){chList();const p=chBib&&byBib(chBib),box=$("chForm");if(!p){box.hidden=true;box.innerHTML="";return}
+  box.hidden=false;const val=k=>({first:p.first,last:p.last,sex:p.sex,nat:p.nat,dob:p.dob,qid:p.qid,email:p.email,phone:p.phone,ice:p.ice,icePhone:p.icePhone,size:p.size})[k]||"";
+  const inp=([k,l,a])=>a==="sel"?`<label>${l}<select name="${k}"><option value="M" ${val(k)==="M"?"selected":""}>Men</option><option value="W" ${val(k)==="W"?"selected":""}>Women</option></select></label>`
+    :a==="size"?`<label>${l}<select name="${k}">${[...new Set([...SIZES,val(k)].filter(Boolean))].map(z=>`<option ${z===val(k)?"selected":""}>${esc(z)}</option>`).join("")}</select></label>`
+    :`<label>${l}<input name="${k}" ${a} value="${esc(val(k))}"></label>`;
+  box.innerHTML=`<h3>New person on bib ${p.bib}</h3><p class="sub">Now: <b>${esc(fullName(p))}</b>${p.team?" · "+esc(p.team):""}. Change what is different; fields you leave as they are stay.</p>
+  <div class="acts" style="justify-content:flex-start;margin-bottom:14px"><button type="button" class="ghost" id="chScan">Photograph QID (front and back)</button><span class="small" id="chPhotos"></span></div>
+  <form class="form" id="chF" onsubmit="return false">${CHF.map(inp).join("")}</form>
+  <div class="acts"><button type="button" class="ghost" id="chCancel">Cancel</button><button type="button" class="pri" id="chSave">Save change</button></div>`;
+  $("chScan").onclick=()=>openQid(p.bib);
+  $("chCancel").onclick=()=>{chBib=null;qidReset();$("chQ").value="";renderSwap()};
+  $("chSave").onclick=chSave;chPhotoNote()}
+function chPhotoNote(){const n=(qid.f?1:0)+(qid.b?1:0),e=$("chPhotos");if(e)e.textContent=n?`${n} QID photo${n>1?"s":""} ready, saved with the change.`:""}
+async function chSave(e){const b=e.currentTarget,p=byBib(chBib),F=$("chF"),v=k=>F.elements[k].value.trim(),m=$("chMsg");
+  const cur={first:p.first,last:p.last,sex:p.sex,nat:p.nat,dob:p.dob,qid:p.qid,email:p.email,phone:p.phone,ice:p.ice,icePhone:p.icePhone,size:p.size},ch={};
+  for(const[k]of CHF){const x=k==="nat"||k==="size"?v(k).toUpperCase():v(k);if(x!==String(cur[k]||"").trim()&&!(k==="nat"&&x===String(cur[k]||"").toUpperCase()))ch[k]=x}
+  if(!v("first")&&!v("last")){m.textContent="Give the new person a name.";return}
+  if(ch.qid&&!/^[23]\d{10}$/.test(ch.qid)){m.textContent="QID must be 11 digits starting with 2 or 3.";return}
+  if(!Object.keys(ch).length&&!qid.f&&!qid.b){m.textContent="Nothing changed.";return}
+  if(b.dataset.sure!=="1"){b.dataset.sure="1";b.textContent=`Tap again: save bib ${p.bib} as ${(v("first")+" "+v("last")).trim()}`;setTimeout(()=>{if(b.isConnected){b.dataset.sure="";b.textContent="Save change"}},5000);return}
+  b.disabled=true;b.textContent="Saving…";
+  try{await qidUpload(p.bib);if(Object.keys(ch).length)await admin("change",{eventId:EV.id,bib:p.bib,fields:ch,device:device||""});
+    Object.assign(p,ch,ch.nat?{nat:ch.nat}:{});const was=fullName({first:cur.first,last:cur.last});
+    m.textContent=`Saved: bib ${p.bib} is now ${fullName(p)} (was ${was}). RR14 gets it within 30 seconds.`;chBib=null;qidReset();$("chQ").value="";renderSwap()}
+  catch(err){m.textContent="Not saved: "+err.message;b.disabled=false;b.textContent="Save change";b.dataset.sure=""}}
+$("chQ").oninput=chList;
+$("v-swap").addEventListener("click",e=>{const b=e.target.closest("[data-ch]");if(!b)return;chBib=+b.dataset.ch;qidReset();$("chQ").value="";$("chMsg").textContent="";renderSwap()});
+/* QID photos for the Change tab: front + back, read on the iPad (Tesseract OCR); they fill the form and are saved with the change. */
+const qid={bib:null,f:null,b:null,text:{f:"",b:""}};
+function loadOCR(){return window.Tesseract?Promise.resolve():new Promise((ok,no)=>{const sc=document.createElement("script");sc.src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js";sc.onload=ok;sc.onerror=()=>no(new Error("Could not load the card reader"));document.head.appendChild(sc)})}
+async function shrink(file,max=1600){const img=await createImageBitmap(file),s=Math.min(1,max/Math.max(img.width,img.height)),c=document.createElement("canvas");c.width=Math.round(img.width*s);c.height=Math.round(img.height*s);c.getContext("2d").drawImage(img,0,0,c.width,c.height);return await new Promise(r=>c.toBlob(r,"image/jpeg",.85))}
+function openQid(bib){const p=byBib(bib);Object.assign(qid,{bib,f:null,b:null,text:{f:"",b:""}});$("qidH").textContent=`QID for #${bib} · ${fullName(p)}`;
+  ["qidFi","qidBi"].forEach(i=>$(i).removeAttribute("src"));const F=$("qidFields").querySelectorAll("input");F.forEach(i=>i.value="");
+  const f=$("qidFields");f.querySelector("[name=qid]").value=p.qid||"";f.querySelector("[name=dob]").value=p.dob||"";f.querySelector("[name=nat]").value=p.nat||"";
+  $("qidState").textContent="";$("qidMsg").hidden=true;$("qidSave").disabled=true;$("qidOv").classList.add("on")}
+/* Qatar ID: 11 digits starting 2/3; dates as DD/MM/YYYY (the earliest is the birth date, a future one the expiry). */
+function parseQid(t){const o={},T=t.replace(/[|]/g,"1").toUpperCase(),q=T.match(/(?:^|\D)([23]\d{10})(?!\d)/)||T.replace(/ /g,"").match(/(?:^|\D)([23]\d{10})(?!\d)/);if(q)o.qid=q[1];
+  const ds=[...T.matchAll(/(\d{2})\s*[\/.-]\s*(\d{2})\s*[\/.-]\s*(\d{4})/g)].map(m=>`${m[3]}-${m[2]}-${m[1]}`).filter(d=>!isNaN(Date.parse(d))).sort();
+  const now=new Date().toISOString().slice(0,10);if(ds.length){const past=ds.filter(d=>d<now),fut=ds.filter(d=>d>now);if(past.length)o.dob=past[0];if(fut.length)o.exp=fut[fut.length-1]}
+  const n=T.match(/NATIONALITY[^A-Z]*([A-Z][A-Z ]{2,30})/);if(n)o.nat=n[1].trim().split(/\s{2,}/)[0];
+  const nm=T.match(/\bNAME[^A-Z]*([A-Z][A-Z' -]{3,60})/);if(nm)o.name=nm[1].trim().split(/\s{2,}/)[0];
+  // MRZ on the back (IDQAT...): birth date YYMMDD and nationality code
+  const mrz=T.replace(/ /g,"").match(/(\d{6})\d[MF<]\d{6}\d([A-Z]{3})/);if(mrz){const y=+mrz[1].slice(0,2),yy=(y>+now.slice(2,4)?"19":"20")+mrz[1].slice(0,2);if(!o.dob)o.dob=`${yy}-${mrz[1].slice(2,4)}-${mrz[1].slice(4,6)}`;if(!o.nat)o.nat=mrz[2]}
+  return o}
+async function qidPhoto(side,file){if(!file)return;const st=$("qidState");qid[side]=await shrink(file);$(side==="f"?"qidFi":"qidBi").src=URL.createObjectURL(qid[side]);$("qidSave").disabled=false;
+  st.textContent="Reading the card…";
+  try{await loadOCR();const r=await Tesseract.recognize(qid[side],"eng");qid.text[side]=r.data.text||"";
+    const o=parseQid(qid.text.f+"\n"+qid.text.b),f=$("qidFields");let got=[];
+    for(const k of["qid","dob","nat","exp","name"])if(o[k]){f.querySelector(`[name=${k}]`).value=o[k];got.push(k==="nat"?"nation":k==="exp"?"expiry":k==="dob"?"date of birth":k.toUpperCase())}
+    st.textContent=got.length?"Read from the card: "+got.join(", ")+". Check them before saving.":"Could not read the card clearly. Type the fields, or take the photo again closer and flat."}
+  catch(e){st.textContent=e.message+". Type the fields by hand."}}
+$("qidF").onchange=e=>{qidPhoto("f",e.target.files[0]);e.target.value=""};
+$("qidB").onchange=e=>{qidPhoto("b",e.target.files[0]);e.target.value=""};
+$("qidCancel").onclick=()=>{$("qidOv").classList.remove("on");chPhotoNote()};
+function qidReset(){Object.assign(qid,{bib:null,f:null,b:null,text:{f:"",b:""}})}
+async function qidUpload(bib){if(!qid.f&&!qid.b)return;const ts=Date.now(),paths={};
+  for(const sd of["f","b"])if(qid[sd]){const path=`${EV.id}/qid/${bib}-${ts}-${sd==="f"?"front":"back"}.jpg`;const{error}=await sb.storage.from(BUCKET).upload(path,qid[sd],{contentType:"image/jpeg"});if(error)throw new Error("QID photo upload failed: "+error.message);paths[sd]=path}
+  const{error}=await sb.from("checkin_qid_docs").insert({event_id:EV.id,bib,front_path:paths.f||null,back_path:paths.b||null,ocr:parseQid(qid.text.f+"\n"+qid.text.b),device:device||""});if(error)throw new Error(error.message)}
+$("qidSave").onclick=()=>{const f=$("qidFields"),v=k=>f.querySelector(`[name=${k}]`).value.trim(),F=$("chF");if(!F){$("qidOv").classList.remove("on");return}
+  if(v("qid"))F.elements.qid.value=v("qid");if(v("dob"))F.elements.dob.value=v("dob");if(v("nat"))F.elements.nat.value=v("nat").toUpperCase();
+  if(v("name")){const w=v("name").split(/\s+/);F.elements.first.value=w[0];F.elements.last.value=w.slice(1).join(" ")}
+  $("qidOv").classList.remove("on");chPhotoNote()};
 /* X on the bib card: drop this participant (and any unsigned drawing), back to search. */
 function closeCard(){sel=null;lastRR="";picked=new Set();ss.set("ck_draft",null);$("q").value="";render();$("q").focus()}
 /* Big confirmation for 3 seconds after a pickup, then back to search (tap closes it sooner). */
