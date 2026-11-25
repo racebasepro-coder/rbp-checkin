@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Event check-in</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* VOICE: a race-day tool, loud where it matters (the bib), calm everywhere else.
+   IDEA: the paper race bib, with its pin holes, is the card for every participant.
+   PICTURE: the selected participant's bib, huge, above details and the signature pad.
+   COLOUR and TYPE: white bib paper, black print, one signal red; Barlow Condensed numbers, Barlow text.
+   LAYOUT: tab bar with tablet and settings on the right; search list beside the active bib; stacked on phones. */
+:root{color-scheme:light dark;--bg:light-dark(#efefea,#121212);--paper:light-dark(#fff,#1d1d1d);--ink:light-dark(#141414,#f2f2ee);--mute:light-dark(#6b6b66,#a3a39c);--line:light-dark(#dcdcd5,#333);--red:#e3361f;--redsoft:light-dark(#fde6e2,#3a1712);--ok:light-dark(#0f6b3f,#5fd39a);--oksoft:light-dark(#dff3e8,#12301f)}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+html{-webkit-tap-highlight-color:transparent;-webkit-text-size-adjust:100%}
+button,label,a,input{touch-action:manipulation}
+body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.5 Barlow,system-ui,sans-serif;overflow-x:clip}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer;min-height:44px;border-radius:10px;border:1.5px solid var(--ink);background:var(--paper);padding:8px 16px;font-weight:600}
+button:focus-visible,input:focus-visible,select:focus-visible,label.btn:focus-within{outline:3px solid var(--red);outline-offset:2px}
+button.pri{background:var(--red);border-color:var(--red);color:#fff}
+button:disabled{opacity:.4;cursor:not-allowed}
+button.ghost{border-color:var(--line)}
+body{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-rows:minmax(0,1fr) auto;min-height:100vh;min-height:100dvh}
+aside{grid-row:1/3;grid-column:2}main{grid-column:1;grid-row:1}
+main{padding-bottom:24px}
+.brandbar{grid-column:1;grid-row:2;position:sticky;bottom:0;z-index:4;display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap;padding:10px max(3vw,14px);padding-bottom:max(8px,env(safe-area-inset-bottom));background:linear-gradient(90deg,#1f2226,#3a3e44 50%,#1f2226);color:#d9dad7}
+.rbp{height:24px;width:auto;display:block}.ver{font-size:13px;opacity:.65;font-variant-numeric:tabular-nums}
+.slogan{font-size:14px;font-weight:500}
+aside{position:sticky;top:0;height:100vh;height:100dvh;width:208px;background:linear-gradient(180deg,#5a5f66 0%,#3a3e44 45%,#1f2226 100%);color:#f4f4f2;border-left:1px solid #0003;display:flex;flex-direction:column;gap:6px;padding:14px 10px;z-index:5;transition:width .18s ease;overflow:hidden}
+aside .brand{display:flex;align-items:center;gap:10px;padding:4px 8px 14px;font:800 26px/1 "Barlow Condensed",sans-serif;white-space:nowrap}
+aside .brand .logo{display:none}aside b{color:var(--red)}
+aside nav{display:grid;gap:4px}
+aside nav a,.sb{color:inherit;text-decoration:none;display:flex;align-items:center;gap:12px;padding:0 12px;min-height:52px;border-radius:12px;font-weight:600;white-space:nowrap;background:transparent;border:0;width:100%;text-align:start}
+aside nav a svg,.sb svg{flex:none}
+aside nav a[aria-current]{background:var(--red);color:#fff}
+.foot{margin-top:auto;display:grid;gap:4px}
+.chip{font-size:13px;opacity:.7;padding:0 12px 4px;white-space:nowrap}
+.sb:hover,aside nav a:hover{background:#ffffff14}
+.sb .mini{display:none;font:800 13px/1 Barlow,sans-serif;margin-left:-8px;align-self:flex-end;margin-bottom:12px}
+body.mini aside{width:72px}
+body.mini aside .lbl{display:none}
+body.mini aside .brand .logo{display:inline}
+body.mini aside nav a,body.mini .sb{justify-content:center;padding:0}
+body.mini .sb .mini{display:inline}
+#collapse svg{transform:rotate(180deg)}body.mini #collapse svg{transform:none}
+@media(prefers-reduced-motion:reduce){aside{transition:none}}
+main{max-width:1240px;width:100%;margin:0 auto;padding:20px max(3vw,14px) 60px}
+.view{display:none}.view.on{display:block}
+.grid{max-width:820px;margin:0 auto;display:grid;gap:14px}
+.list:empty{display:none}
+.sbar{display:flex;gap:8px}
+.search{flex:1;width:100%;font-size:20px;padding:15px 16px;border-radius:12px;border:2px solid var(--ink);background:var(--paper);min-height:62px}
+label.btn{display:inline-flex;align-items:center;gap:8px;cursor:pointer;min-height:62px;border-radius:12px;border:2px solid var(--ink);background:var(--ink);color:var(--bg);padding:0 16px;font-weight:600;white-space:nowrap}
+label.btn input{position:absolute;opacity:0;width:1px;height:1px}
+.list{list-style:none;margin:10px 0 0;padding:0;display:grid;gap:6px}
+.row{display:grid;grid-template-columns:4.2em minmax(0,1fr) auto;gap:12px;align-items:center;background:var(--paper);border:1.5px solid var(--line);border-radius:12px;padding:10px 12px;width:100%;text-align:start;font-weight:400;min-height:60px}
+.row[aria-selected=true]{border-color:var(--red);box-shadow:0 0 0 2px var(--red) inset}
+.num{font:800 28px/1 "Barlow Condensed",sans-serif;text-align:end}
+.nm{font-weight:600;font-size:19px}.sub{font-size:15px;color:var(--mute)}
+.tag{font:700 13px/1 Barlow,sans-serif;padding:6px 9px;border-radius:999px;white-space:nowrap;background:var(--bg)}
+.tag.ok{background:var(--oksoft);color:var(--ok)}
+.bib{position:relative;background:var(--paper);border:2px solid var(--ink);border-radius:14px;padding:22px 28px 18px;box-shadow:0 6px 0 light-dark(#0001,#0006)}
+.bib::before,.bib::after{content:"";position:absolute;top:12px;left:12px;width:12px;height:12px;border-radius:50%;background:var(--bg);border:1.5px solid var(--line)}
+.bib::after{left:auto;right:12px}
+.bib .team{font:800 clamp(26px,3.6vw,40px)/1.05 "Barlow Condensed",sans-serif;color:var(--red);padding-inline:14px 60px;text-wrap:balance}
+.bib .line{display:flex;align-items:center;gap:6px 18px;flex-wrap:wrap;margin:6px 0 10px}
+.bib .big{font:800 clamp(44px,6.4vw,72px)/1 "Barlow Condensed",sans-serif;padding:.06em .32em;border-radius:12px}
+.bib .line .flag{font-size:clamp(44px,6.4vw,72px);line-height:1}
+.bib .who{font:800 clamp(44px,6.4vw,72px)/1 "Barlow Condensed",sans-serif;text-wrap:balance}
+.bb{border-radius:8px;padding:.08em .22em;display:inline-block;text-align:center}
+.swatch{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.swatch input[type=color]{width:56px;height:44px;padding:2px;border-radius:10px;border:1.5px solid var(--line);background:var(--bg)}.swatch label{display:flex;gap:8px;align-items:center;font-size:14px;font-weight:600}.prev{font:800 34px/1 "Barlow Condensed",sans-serif;padding:.08em .3em;border-radius:10px;min-width:3em;text-align:center}
+.bib .info{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px 20px;margin:0;padding:14px 0 0;border-top:1.5px solid var(--line)}
+.bib .info.r2{grid-template-columns:minmax(0,.6fr) minmax(0,.6fr) minmax(0,1.4fr) minmax(0,1fr) minmax(0,1.4fr)}
+@media(max-width:900px){.bib .info.r2{grid-template-columns:repeat(auto-fit,minmax(min(100%,150px),1fr))}}
+@media(max-width:520px){.bib .info{grid-template-columns:minmax(0,1fr)}}
+.bib .info+.info{border-top:0;padding-top:10px}
+.bib .info dt{font-size:15px;color:var(--mute);font-weight:600;margin-bottom:2px}
+.bib .info dd{margin:0;font-size:21px;line-height:1.25;font-weight:600;overflow-wrap:anywhere;font-variant-numeric:tabular-nums}
+.bib .info dd.none{color:var(--mute);font-weight:400}
+.bib .pen{position:absolute;top:14px;right:30px;background:var(--paper)}
+.bib .stripe{height:10px;background:var(--red);margin:14px -28px -18px;border-radius:0 0 12px 12px}
+.flag{font-size:1.1em}
+.panel{margin-top:18px;background:var(--paper);border:1.5px solid var(--line);border-radius:14px;padding:16px}
+.panel h3{margin:0 0 10px;font:700 22px/1.1 "Barlow Condensed",sans-serif}
+.form{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,200px),1fr));gap:10px 14px}
+.form label{display:grid;gap:4px;font-size:14px;font-weight:600}
+.form input,.form select{font-size:16px;padding:10px 12px;border-radius:10px;border:1.5px solid var(--line);background:var(--bg);min-height:44px;font-weight:400}
+.form input[readonly]{border-style:dashed;color:var(--mute)}
+.form .wide{grid-column:1/-1}
+.choice{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:10px;margin-bottom:6px}
+.choice button{min-height:76px;font:700 22px/1.1 "Barlow Condensed",sans-serif;border-width:2px}
+.choice button[aria-pressed=true]{background:var(--red);border-color:var(--red);color:#fff}
+#mates{margin-top:8px}
+.mem{display:flex;gap:12px;align-items:center;padding:8px 4px;border-top:1px solid var(--line);min-height:52px}
+.mem input{width:26px;height:26px;accent-color:var(--red);flex:none}
+.mem label{flex:1;display:flex;gap:12px;align-items:center;cursor:pointer;white-space:nowrap;overflow:hidden}
+.mem .num{font-size:22px;width:2.2em;flex:none}
+.mem .mn{flex:1;font-weight:600;overflow:hidden;text-overflow:ellipsis}
+.mem .qid{font:14px ui-monospace,Menlo,monospace;color:var(--mute);flex:none}
+.mhd{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:4px}.mhd .num{font-size:clamp(56px,10vw,80px);line-height:.9}.mhd .flag{font-size:40px}.mhd h2{margin:0}
+.qv{display:inline-grid;place-items:center;width:24px;height:24px;border-radius:50%;font:800 15px/1 Barlow,sans-serif;color:#fff;vertical-align:middle}.qv.ok{background:#12924f}.qv.bad{background:var(--red)}
+.qvt{display:block;font-size:15px;font-weight:600}.qvt.ok{color:var(--ok)}.qvt.bad{color:var(--red)}
+.pen{width:48px;padding:0;display:grid;place-items:center;border-color:var(--line);flex:none}
+@media(max-width:520px){.mem .qid{display:none}}
+.pad{position:relative;height:220px;border:2px dashed var(--mute);border-radius:12px;background:#fff;touch-action:none}
+.pad canvas{position:absolute;inset:0;width:100%;height:100%}
+.pad span{position:absolute;left:16px;bottom:44px;right:16px;border-top:1.5px solid #bbb;pointer-events:none}
+.pad em{position:absolute;left:16px;bottom:14px;font-size:13px;color:#888;pointer-events:none}
+.acts{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px;justify-content:flex-end}
+.note{border-radius:12px;padding:14px 16px;margin-top:14px;background:var(--oksoft);color:var(--ok);font-weight:600}
+.note.warn{background:var(--redsoft);color:var(--red)}
+.rr{font:13px/1.5 ui-monospace,Menlo,monospace;background:var(--bg);border-radius:10px;padding:10px 12px;margin-top:10px;overflow-x:auto;white-space:pre}
+.empty{color:var(--mute);padding:30px 10px;text-align:center}
+.sig{max-width:260px;background:#fff;border-radius:8px;border:1px solid var(--line);display:block;margin-top:8px}
+.desk{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,360px),1fr));gap:14px;margin-top:14px}
+.card{background:var(--paper);border:2px solid var(--ink);border-radius:14px;padding:14px 16px;display:flex;flex-direction:column;gap:8px}
+.card .hd{display:flex;gap:12px;align-items:baseline;flex-wrap:wrap}
+.card .num{font-size:40px;text-align:start}
+.shirts{list-style:none;margin:0;padding:0;display:grid;gap:4px}
+.shirts li{display:flex;justify-content:space-between;gap:10px;padding:6px 10px;background:var(--bg);border-radius:8px}
+.size{font:800 20px/1 "Barlow Condensed",sans-serif;color:var(--red)}
+.card .acts{margin-top:auto}
+#v-merch.on{display:flex;flex-direction:column;height:calc(100dvh - 100px);min-height:520px;gap:14px}
+.mtop{flex:1 1 70%;overflow:auto;min-height:0}
+.mtop .desk{margin-top:6px}
+.desk{display:grid;grid-template-columns:minmax(0,1fr);gap:8px}
+.mrow{display:grid;grid-template-columns:auto auto minmax(0,1fr) minmax(0,1.3fr) auto;gap:14px;align-items:center;background:var(--paper);border:1.5px solid var(--line);border-radius:14px;padding:10px 12px;min-height:84px}
+.mrow.team{border-color:transparent}.mrow.team .mw,.mrow.team .sx{color:inherit;opacity:.85}
+.mrow .mb{font:800 30px/1 "Barlow Condensed",sans-serif;min-width:2.6em}.mrow.team .mb{box-shadow:0 0 0 2px #fff8}
+.mrow .flag{font-size:30px}.mrow .mn{display:grid;min-width:0}.mrow .nm{font-size:21px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mrow .mw{font-size:15px;color:var(--mute);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mrow .sh{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:flex-end}
+.sg{display:grid;gap:4px}.sg>.sx{font:800 13px/1 Barlow,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:var(--mute)}
+.sg .chips{display:flex;flex-wrap:wrap;gap:6px}
+.sz{display:inline-flex;align-items:baseline;gap:3px;background:#fff;color:#141414;border:2.5px solid #141414;border-radius:10px;padding:5px 11px 4px;font:800 38px/1 "Barlow Condensed",sans-serif;box-shadow:0 1px 0 #0002}
+.sz i{font:700 22px/1 "Barlow Condensed",sans-serif;font-style:normal;color:#555}
+.sg.w .sz{border-color:#b0126b}.sg.w>.sx{color:#b0126b}
+.mrow.team .sg>.sx{color:inherit;opacity:1;text-shadow:0 1px 2px #0006}
+.sx{font-size:14px;color:var(--mute);font-weight:600}
+.cbtn{min-height:56px;min-width:150px;font-size:18px;position:relative;z-index:1}
+.mrow{position:relative;overflow:hidden}.mrow>*{position:relative;z-index:1}
+.mrow .fill{position:absolute;inset:0 auto 0 0;width:0;z-index:0;background:light-dark(#0f6b3f2e,#5fd39a33);animation:fillrow 10s linear forwards}
+@keyframes fillrow{to{width:100%}}
+@media(prefers-reduced-motion:reduce){.mrow .fill{animation-duration:10s}}.mrow.team .cbtn.ghost{background:#fff;color:#141414}
+@media(max-width:700px){.mrow{grid-template-columns:auto minmax(0,1fr) auto}.mrow .flag{display:none}.mrow .sh{grid-column:1/-1;grid-row:2}}
+.mhist{flex:0 0 30%;min-height:0;overflow:auto;background:light-dark(#e4e4df,#262626);border-radius:14px;padding:12px 16px;color:light-dark(#3a3a37,#cfcfca)}
+.mhist h3{margin:0 0 6px;font:700 20px/1.1 "Barlow Condensed",sans-serif}
+.mhist td{border-bottom:1px solid light-dark(#d2d2cc,#383838);padding:7px 6px;font-size:16px}
+.mhist .bb{font:800 18px/1 "Barlow Condensed",sans-serif}
+.bar{display:flex;gap:10px;flex-wrap:wrap;align-items:center}.bar .search{flex:1 1 280px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,200px),1fr));gap:12px}
+.kpi{background:var(--paper);border:1.5px solid var(--line);border-radius:14px;padding:14px 16px}
+.kpi b{display:block;font:800 clamp(40px,5vw,56px)/1 "Barlow Condensed",sans-serif}
+.kpi small{color:var(--mute);font-size:14px}
+.meter{height:10px;background:var(--bg);border-radius:6px;margin-top:10px;overflow:hidden}.meter i{display:block;height:100%;background:var(--red)}
+.two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;margin-top:16px}
+@media(max-width:760px){.two{grid-template-columns:minmax(0,1fr)}}
+table{width:100%;border-collapse:collapse}th,td{padding:8px 6px;border-bottom:1px solid var(--line);text-align:start}td.n,th.n{text-align:end;font-variant-numeric:tabular-nums}
+.hrow{display:grid;grid-template-columns:3.5em minmax(0,1fr) 2.5em;gap:10px;align-items:center;font-size:14px;margin:4px 0}
+.hrow .t{height:18px;background:var(--bg);border-radius:4px;overflow:hidden}.hrow .t i{display:block;height:100%;background:var(--ink)}
+.small{font-size:13px;color:var(--mute)}
+.ov{position:fixed;inset:0;background:#000a;z-index:20;display:none;align-items:flex-start;justify-content:center;padding:4vh 12px;overflow:auto}
+.ov.on{display:flex}
+.sheet{background:var(--paper);border-radius:16px;padding:20px;width:min(760px,100%);border:2px solid var(--ink)}
+.sheet h2{font:800 32px/1.05 "Barlow Condensed",sans-serif;margin:0 0 6px}
+.sheet h4{margin:18px 0 8px;font-size:16px}
+.evrow{display:flex;align-items:center;gap:12px;padding:10px 0;border-top:1px solid var(--line);flex-wrap:wrap}.evrow b{font:800 22px/1.1 "Barlow Condensed",sans-serif}.evrow .sub{flex:1;min-width:12em}.evrow .on{background:var(--ok);color:#fff;border-radius:999px;padding:3px 10px;font-size:13px;font-weight:700}
+.devrow{display:flex;align-items:center;gap:12px;padding:8px 0;border-top:1px solid var(--line);flex-wrap:wrap}.devrow b{font:800 24px/1 "Barlow Condensed",sans-serif;min-width:5.5em}.devrow .sub{flex:1}
+#setOv.page{position:static;display:none;background:none;padding:0;overflow:visible;z-index:auto}
+body.settings #setOv.page{display:block}body.settings main>.view{display:none!important}
+#setOv.page .sheet{width:100%;max-width:980px;border:0;background:none;padding:0;border-radius:0}
+#setOv.page .acts.sticky{position:sticky;bottom:64px;background:var(--bg);padding:12px 0;margin-top:20px;border-top:1.5px solid var(--line)}
+body.settings #gear{background:var(--red);color:#fff}
+.tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:14px}
+.tabs button{font:800 34px/1 "Barlow Condensed",sans-serif;min-height:88px;display:grid;place-items:center;gap:4px}.tabs button small{font:600 13px/1 Barlow,sans-serif}.tabs button[aria-pressed=true]{background:var(--red);border-color:var(--red);color:#fff}
+@media(max-width:600px){table{font-size:13px}.stack thead{display:none}.stack tr{display:grid;padding-block:10px}.stack td{display:flow-root;border:0;padding:3px 0;padding-inline-start:8em;text-align:start}.stack td::before{content:attr(data-l);float:inline-start;width:7.5em;margin-inline-start:-8em;white-space:normal}.stack td:empty{display:none}}
+@media(prefers-reduced-motion:no-preference){.note{animation:pop .35s ease-out}@keyframes pop{from{transform:translateY(-6px);opacity:0}}}
+</style>
+<script>new MutationObserver(()=>{for(const c of document.querySelectorAll('.stack td:not([data-l])')){let i=0,p=c;while(p=p.previousElementSibling)i+=p.colSpan;c.dataset.l=c.closest('table').rows[0]?.cells[i]?.textContent||''}}).observe(document,{childList:true,subtree:true})</script>
+</head>
+<body>
+<aside id="side">
+  <div class="brand"><span class="logo">C<b>·</b>I</span><span class="lbl">CHECK<b>·</b>IN</span></div>
+  <nav>
+    <a href="#checkin" data-v="checkin" title="Bib pickup"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="6.5" cy="8" r=".6"/><circle cx="17.5" cy="8" r=".6"/><path d="M9 15v-5l-1.5 1.2M13 10h3l-2.5 5"/></svg><span class="lbl">Bib pickup</span></a>
+    <a href="#merch" data-v="merch" title="Packages"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 8h14l-1 12H6z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg><span class="lbl">Packages</span></a>
+    <a href="#stats" data-v="stats" title="Statistics"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg><span class="lbl">Statistics</span></a>
+  </nav>
+  <div class="foot">
+    <span class="chip lbl" id="evName" style="font-weight:700;opacity:1"></span>
+    <span class="chip lbl" id="mode">Connecting…</span>
+    <button id="tabBtn" class="sb" title="Change device"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="2.5" width="14" height="19" rx="2"/><path d="M11 18.5h2"/></svg><span class="lbl" id="tabLbl">Tablet ?</span><span class="mini" id="tabMini"></span></button>
+    <button id="gear" class="sb" title="RR14 settings"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg><span class="lbl">Settings</span></button>
+    <button id="collapse" class="sb" title="Collapse menu" aria-expanded="true"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg><span class="lbl">Collapse</span></button>
+  </div>
+</aside>
+<main>
+  <section class="view" id="v-checkin">
+    <div class="grid">
+      <div>
+        <div class="sbar">
+          <input class="search" id="q" type="search" placeholder="Name, bib or team" autocomplete="off" aria-label="Search participants">
+          <label class="btn" title="Photograph the participant's QR code"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7V3h4M17 3h4v4M21 17v4h-4M7 21H3v-4"/><rect x="8" y="8" width="8" height="8"/></svg>Scan QR<input type="file" id="qr" accept="image/*" capture="environment"></label>
+        </div>
+        <p class="small" id="qrmsg">A USB or Bluetooth barcode scanner also works: it types into the search box.</p>
+        <ul class="list" id="res" role="listbox" aria-label="Participants"></ul>
+      </div>
+      <div id="detail"></div>
+    </div>
+  </section>
+  <section class="view" id="v-merch">
+    <div class="mtop">
+      <p class="small" id="mcount"></p>
+      <div class="desk" id="desk"></div>
+    </div>
+    <div class="mhist">
+      <h3>Packages issued</h3>
+      <div id="hist"></div>
+    </div>
+  </section>
+  <section class="view" id="v-stats">
+    <div class="kpis" id="kpis"></div>
+    <div class="two">
+      <div class="panel"><h3>Shirts by size and stock</h3><div class="scroll"><table id="sizes"></table></div></div>
+      <div class="panel"><h3>Signatures per hour</h3><div id="hours"></div></div>
+    </div>
+    <div class="two">
+      <div class="panel"><h3>By device</h3><div class="scroll"><table id="devs"></table></div></div>
+      <div class="panel"><h3>Recent activity</h3><div id="recent"></div></div>
+    </div>
+  </section>
+</main>
+<footer class="brandbar" id="brandbar"><span class="slogan" id="slogan">Made with Passion. Driven by Data.</span><img class="rbp" src="logo.png" alt="RaceBasePro" width="120" height="28"><span class="ver" id="ver"></span></footer>
+
+<div class="ov" id="tabOv" role="dialog" aria-modal="true" aria-labelledby="tabH">
+  <div class="sheet">
+    <h2 id="tabH">Which device is this?</h2>
+    <p class="sub">Every bib and package handed out on this device is recorded with this name, so you know who issued what.</p>
+    <div class="tabs" id="tabList"></div>
+    <p class="small" id="tabMsg" style="color:var(--red);min-height:1.5em;margin:10px 0 0"></p>
+  </div>
+</div>
+
+<div class="ov" id="memOv" role="dialog" aria-modal="true" aria-labelledby="memH">
+  <form class="sheet" id="memForm" style="width:min(520px,100%)">
+    <div class="mhd"><span class="num" id="memBib"></span><span class="flag" id="memFlag"></span><h2 id="memH"></h2></div>
+    <p class="sub" id="memSub" style="margin-top:0"></p>
+    <div class="form" id="memFields"></div>
+    <p class="small" id="memMsg">Saved here at once, in RR14 within 30 seconds.</p>
+    <div class="acts"><button type="button" class="ghost" id="memCancel">Cancel</button><button class="pri" type="submit">Save</button></div>
+  </form>
+</div>
+
+<div class="ov" id="loginOv" role="dialog" aria-modal="true" aria-labelledby="loginH">
+  <form class="sheet" id="loginForm" style="width:min(440px,100%)" autocomplete="off">
+    <h2 id="loginH">RBP admin</h2>
+    <p class="sub" id="loginSub">Settings are central for every device. Only the RBP admin can open them.</p>
+    <div class="form">
+      <label class="wide">PIN or password<input name="pass" type="password" autocapitalize="none" autocorrect="off" style="font-size:24px;letter-spacing:.2em"></label>
+    </div>
+    <p class="small" id="loginMsg" style="color:var(--red);min-height:1.5em"></p>
+    <div class="acts"><button type="button" class="ghost" id="loginCancel">Cancel</button><button class="pri" type="submit" id="loginBtn">Log in</button></div>
+  </form>
+</div>
+
+<div class="ov" id="authOv" role="dialog" aria-modal="true" aria-labelledby="authH">
+  <form class="sheet" id="authForm" style="width:min(440px,100%)">
+    <h2 id="authH">Sign in</h2>
+    <p class="sub">Staff login for this event. The iPad stays signed in.</p>
+    <div class="form">
+      <label class="wide">Email<input name="email" type="email" autocapitalize="none" autocorrect="off" autocomplete="username"></label>
+      <label class="wide">Password<input name="password" type="password" autocomplete="current-password"></label>
+    </div>
+    <p class="small" id="authMsg" style="color:var(--red);min-height:1.5em"></p>
+    <div class="acts"><button class="pri" type="submit" id="authBtn">Sign in</button></div>
+  </form>
+</div>
+
+<div class="ov" id="setOv" role="dialog" aria-modal="true" aria-labelledby="setH">
+  <form class="sheet" id="setForm">
+    <h2 id="setH">RR14 settings</h2>
+    <p class="sub">Shared by all devices. Saved centrally, only the RBP admin can change them.</p>
+    <h4>Active devices</h4>
+    <div id="devList"></div>
+    <h4>Events</h4>
+    <p class="sub" style="margin:0 0 6px">Every iPad works on the active event. Each event keeps its own participants, signatures, statistics and RR14 links.</p>
+    <div id="evList"><p class="sub">Loading…</p></div>
+    <div class="form" id="rrLinks">
+      <label class="wide">RR14 list link for the active event (read, JSON)<input name="evList" data-skip type="url" autocomplete="off" placeholder="https://…"></label>
+      <label class="wide">RR14 write link for the active event (part/savefields)<input name="evWrite" data-skip type="url" autocomplete="off" placeholder="https://…"></label>
+    </div>
+    <p class="small" style="margin:4px 0">Leave a field empty to keep the stored link. The links are stored on the server and never sent to the iPads.</p>
+    <div class="acts" style="justify-content:flex-start"><button type="button" class="ghost" id="evSaveLinks">Save RR14 links</button><button type="button" class="ghost" id="evNewBtn">New event</button></div>
+    <div id="evNew" hidden>
+      <div class="form">
+        <label>Event name<input name="newEvName" data-skip placeholder="Doha Run 2026"></label>
+        <label>Event ID<input name="newEvId" data-skip autocapitalize="none" placeholder="doha-run-2026"></label>
+        <label class="wide">RR14 list link (read, JSON)<input name="newEvList" data-skip type="url" autocomplete="off" placeholder="https://…"></label>
+        <label class="wide">RR14 write link (part/savefields)<input name="newEvWrite" data-skip type="url" autocomplete="off" placeholder="https://…"></label>
+        <label class="wide"><span><input type="checkbox" name="newEvCopy" data-skip checked style="width:22px;height:22px;vertical-align:middle"> Copy colours, field names and slogan from the active event</span></label>
+      </div>
+      <div class="acts" style="justify-content:flex-start"><button type="button" class="pri" id="evCreate">Create event</button></div>
+    </div>
+    <p class="small" id="evMsg" style="min-height:1.5em"></p>
+    <h4>RaceResult 14 sync</h4>
+    <div id="rrBox"><p class="sub">Checking…</p></div>
+    <div class="form">
+      <label>Date format for RR14<select name="dateFormat"><option value="dmy">DD.MM.YYYY</option><option value="iso">YYYY-MM-DD</option></select></label>
+      <label class="wide">List column order (only if the RR14 list returns rows as arrays)<input name="readColumns" placeholder="Bib,Firstname,Lastname,Team,Sex,Nation,DateOfBirth,AgeGroup.Name,TShirt,QID,Email,Phone,ICEName,ICEPhone"></label>
+    </div>
+    <p class="small">Sync with RR14 runs every 30 seconds for the active event.</p>
+    <div class="acts" style="justify-content:flex-start"><button type="button" class="ghost" id="syncNow">Sync from RR14 now</button><button type="button" class="ghost" id="retryRR">Retry failed RR14 writes</button></div>
+    <h4>Signatures</h4>
+    <p class="sub" style="margin:0 0 8px">Saved as PNG in Supabase Storage (private). RR14 gets a link that opens the signature.</p>
+    <div id="syncBox"><p class="sub">Checking…</p></div>
+    <h4>Shirt stock</h4>
+    <p class="sub" style="margin:0 0 8px">Pieces on hand at the start, used in statistics.</p>
+    <div class="scroll"><table class="stock"><thead><tr id="stockHead"><th></th></tr></thead><tbody id="stockBody"></tbody></table></div>
+    <h4>Footer</h4>
+    <div class="form"><label class="wide">Footer slogan<input name="slogan" placeholder="Made with Passion. Driven by Data."></label></div>
+    <h4>Admin</h4>
+    <div class="form"><label>New RBP admin PIN or password<input name="newPin" type="password" autocomplete="new-password" data-skip></label></div>
+    <div class="acts" style="justify-content:flex-start"><button type="button" class="ghost" id="pinBtn">Change PIN</button><button type="button" class="ghost" id="signOut">Sign this iPad out</button></div>
+    <p class="small" id="adminMsg" style="min-height:1.5em"></p>
+    <h4>Bib number colours</h4>
+    <div class="form">
+      <div class="swatch" data-kind="solo"><b style="width:3em">Solo</b><span class="prev" id="prev_solo">101</span><label>Text<input type="color" name="col_solo_fg"></label><label>Background<input type="color" name="col_solo_bg"></label><label><input type="checkbox" name="col_solo_grad" style="width:22px;height:22px"> Gradient</label><label>to<input type="color" name="col_solo_bg2"></label></div>
+      <div class="swatch" data-kind="team"><b style="width:3em">Team</b><span class="prev" id="prev_team">201</span><label>Text<input type="color" name="col_team_fg"></label><label>Background<input type="color" name="col_team_bg"></label><label><input type="checkbox" name="col_team_grad" style="width:22px;height:22px"> Gradient</label><label>to<input type="color" name="col_team_bg2"></label></div>
+    </div>
+    <h4>RR14 field names</h4>
+    <div class="form" id="mapForm"></div>
+    <div class="acts sticky"><button type="button" class="ghost" id="setLock" style="margin-right:auto">Log out</button><button type="button" class="ghost" id="setCancel">Cancel</button><button class="pri" type="submit">Save settings</button></div>
+  </form>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="config.js"></script>
+<script>
+"use strict";
+{
+let syncState=null,EV=null;
+const APP_VERSION="1.1";
+const SIZES=["XS","S","M","L","XL","XXL"];
+const FIELDS=[["dob","Date of birth",'type="date"'],["nat","Nation",'maxlength="3" autocapitalize="characters" placeholder="CRO"'],["qid","QID",'inputmode="numeric"'],["ice","ICE person",'placeholder="Emergency contact name"'],["icePhone","ICE phone",'type="tel" placeholder="+974…"'],["email","Email",'type="email" placeholder="name@example.com"'],["phone","Phone",'type="tel" placeholder="+974…"']];
+const FK=FIELDS.map(f=>f[0]);
+/* QID: 11 digits = century (2=19xx, 3=20xx) + birth year (2) + nationality code (3, Qatar 634) + serial (5) */
+function qidCheck(p){const q=String(p.qid||"").replace(/\s/g,""),qat=String(p.nat).toUpperCase()==="QAT";
+  if(!q)return qat?{s:"bad",t:"Nation is Qatar but no QID"}:{s:"none",t:""};
+  if(!/^[23]\d{10}$/.test(q))return{s:"bad",t:"QID must be 11 digits starting with 2 or 3"};
+  const qq=q.slice(3,6)==="634",yr=(q[0]==="2"?"19":"20")+q.slice(1,3),dy=p.dob?p.dob.slice(0,4):"";
+  if(dy&&dy!==yr)return{s:"bad",t:`QID birth year ${yr} does not match date of birth ${dy}`};
+  if(qat&&qq)return{s:"ok",t:"Qatari national, QID verified"};
+  if(qat)return{s:"bad",t:"Nation is Qatar but the QID is not a Qatari national's"};
+  if(qq)return{s:"bad",t:`QID is a Qatari national's but nation is ${p.nat}`};
+  return{s:"none",t:"QID valid (resident)"}}
+const QV={ok:"Yes",bad:"Check",none:"No"};
+const COL_DEF={solo:{fg:"#ffffff",bg:"#141414",bg2:"#4a4a4a",grad:false},team:{fg:"#ffffff",bg:"#e3361f",bg2:"#ff8a00",grad:false}};
+const hex=(x,d)=>/^#[0-9a-f]{6}$/i.test(x||"")?x:d;
+function bibCss(kind,c){const d=COL_DEF[kind];c=c||{};const bg=hex(c.bg,d.bg),bg2=hex(c.bg2,d.bg2);return `color:${hex(c.fg,d.fg)};background:${c.grad?`linear-gradient(135deg,${bg},${bg2})`:bg}`}
+const bibStyle=p=>bibCss(p.team?"team":"solo",(cfg.colors||{})[p.team?"team":"solo"]);
+const qidMark=c=>c.s==="ok"?`<span class="qv ok" title="${esc(c.t)}" aria-label="${esc(c.t)}">✓</span>`:c.s==="bad"?`<span class="qv bad" title="${esc(c.t)}" aria-label="${esc(c.t)}">!</span>`:"";
+const fieldsHtml=(pre,p)=>FIELDS.map(([k,l,a])=>`<label>${l}<input id="${pre}${k}" ${a} value="${esc(p[k]||"")}"></label>`).join("");
+const ISO2={CRO:"HR",BIH:"BA",SLO:"SI",SRB:"RS",MNE:"ME",ITA:"IT",AUT:"AT",QAT:"QA",GER:"DE",HUN:"HU",GBR:"GB",USA:"US",FRA:"FR",ESP:"ES",NED:"NL",SUI:"CH",POL:"PL",CZE:"CZ",SVK:"SK"};
+const MAP_DEF={sigUrl:"SignatureURL",sigTime:"SignatureTime",scope:"PickupScope",by:"CollectedBy",forList:"CollectedFor",desk:"CheckinDevice",merch:"PackageIssued",merchTime:"PackageTime",merchDesk:"PackageDevice",qid:"QID",ageGroup:"AgeGroup.Name",qv:"QatariVerified",dob:"DateOfBirth",nat:"Nation",ice:"ICEName",icePhone:"ICEPhone",phone:"Phone",email:"Email"};
+const MAP_LBL={sigUrl:"Signature link",sigTime:"Signature time",scope:"Pickup scope",by:"Collected by",forList:"Collected for",desk:"Bib device",merch:"Package issued",merchTime:"Package time",merchDesk:"Package device",qid:"QID",ageGroup:"Category (read)",qv:"Qatari verified",dob:"Date of birth",nat:"Nation",ice:"ICE person",icePhone:"ICE phone",phone:"Phone",email:"Email"};
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const $=id=>document.getElementById(id);
+const fmt=t=>t?new Date(t).toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"}):"";
+const fdate=d=>{const m=/^(\d{4})-(\d{2})-(\d{2})/.exec(d||"");return m?`${m[3]}.${m[2]}.${m[1]}`:"not set"};
+const norm=s=>String(s).toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/đ/g,"d");
+const flag=n=>{const c=ISO2[n]||(String(n).length===2?n:"");return c?[...c.toUpperCase()].map(x=>String.fromCodePoint(127397+x.charCodeAt(0))).join(""):""};
+const ls={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}}};
+let P=[],sel=null,picked=new Set(),showDone=false,lastRR="",cfg={map:{...MAP_DEF}},device=ls.get("ck_device")||"";
+const byBib=b=>P.find(p=>p.bib===b);
+const fullName=p=>p.first+" "+p.last;
+const teamOf=p=>p.team?P.filter(x=>x.team===p.team).sort((a,b)=>a.bib-b.bib):[p];
+const groupOf=sigId=>P.filter(p=>p.sigId===sigId).sort((a,b)=>a.bib-b.bib);
+const M=k=>(cfg.map&&cfg.map[k])||MAP_DEF[k];
+
+/* ---- Supabase: data, signatures, RR14 queue ---- */
+const CONF=window.CHECKIN_CONFIG||{};
+const sb=window.supabase&&CONF.supabaseUrl&&CONF.anonKey&&!/YOUR-/.test(CONF.supabaseUrl+CONF.anonKey)?window.supabase.createClient(CONF.supabaseUrl,CONF.anonKey,{auth:{persistSession:true,autoRefreshToken:true}}):null;
+const BUCKET="checkin-signatures";
+const fromRow=r=>({bib:r.bib,first:r.first_name||"",last:r.last_name||"",team:r.team||"",sex:r.sex||"",nat:r.nation||"",dob:r.dob||"",ageGroup:r.age_group||"",size:r.shirt_size||"",qid:r.qid||"",email:r.email||"",phone:r.phone||"",ice:r.ice_name||"",icePhone:r.ice_phone||"",sigId:r.sig_id,sigTime:r.sig_time,sigUrl:r.sig_url,scope:r.pickup_scope,by:r.collected_by,desk:r.checkin_device,qv:r.qatari_verified,merch:!!r.package_issued,merchTime:r.package_time,merchDesk:r.package_device});
+async function rpc(fn,args){const{data,error}=await sb.rpc(fn,args);if(error)throw new Error(error.message);return data}
+const RR={
+  async edit(bib,fields){await rpc("checkin_edit",{p_bib:bib,p_fields:fields});Object.assign(byBib(bib),fields)},
+  async upload(id,png){const blob=await(await fetch(png)).blob();const{error}=await sb.storage.from(BUCKET).upload(EV.id+"/"+id+".png",blob,{contentType:"image/png",upsert:true});if(error)throw new Error("Signature upload failed: "+error.message)},
+  collect:a=>rpc("checkin_collect",a),
+  async undo(id){await rpc("checkin_undo",{p_sig_id:id})},
+  async issue(id,on){await rpc("checkin_issue",{p_sig_id:id,p_on:on,p_device:device||"unknown"})},
+  async sig(id){const{data}=await sb.storage.from(BUCKET).createSignedUrl(EV.id+"/"+id+".png",300);return data&&data.signedUrl}
+};
+async function loadAll(){if(!EV){P=[];return}const out=[];for(let i=0;;i+=1000){const{data,error}=await sb.from("checkin_participants").select("*").eq("event_id",EV.id).order("bib").range(i,i+999);if(error)throw error;out.push(...data);if(data.length<1000)break}P=out.map(fromRow)}
+let evReload=false,evBoot=false;
+function applyEvent(r){if(!r)return;
+  if(r.active===false){if(EV&&r.id===EV.id){evReload=true;reloadWhenIdle()}return}
+  if(EV&&r.id!==EV.id){evReload=true;reloadWhenIdle();return}
+  if(!EV&&evBoot&&r.active){evReload=true;reloadWhenIdle();return}
+  EV={id:r.id,name:r.name};const v=r.settings||{};cfg={...v,map:{...MAP_DEF,...(v.map||{})}};syncState=r.sync||null;
+  $("evName").textContent=r.name;document.title=r.name+" · Check-in";
+  if(document.body.classList.contains("settings"))renderSync();soon()}
+async function loadCfg(){const{data,error}=await sb.from("checkin_events").select("id,name,active,settings,sync").eq("active",true).maybeSingle();if(error)throw error;
+  if(data)applyEvent(data);else{EV=null;$("evName").textContent="No active event"}}
+const idle=()=>!(sel&&$("cv"))&&!document.querySelector(".ov.on")&&!document.body.classList.contains("settings");
+function reloadWhenIdle(){if(idle())location.reload();else setTimeout(reloadWhenIdle,3000)}
+let rt=0;function soon(){clearTimeout(rt);rt=setTimeout(()=>{if(sel&&$("cv")&&!["merch","stats"].includes(location.hash.slice(1))){renderList();return}render()},120)}
+
+/* ---- device ---- */
+/* ---- device: one tablet number per iPad at a time (short lease, renewed while open) ---- */
+const CID=ls.get("ck_cid")||(()=>{const c="c"+Math.random().toString(36).slice(2)+Date.now().toString(36);ls.set("ck_cid",c);return c})();
+const LEASE=45000;let taken={};
+const devId=n=>"t"+String(n).replace("Tablet ","").replace(/[^0-9_]/g,"");let devs=[];
+function showDevice(){$("tabLbl").textContent=device||"Pick device";$("tabMini").textContent=device?device.replace("Tablet ",""):"?";
+  $("tabList").innerHTML=[1,2,3,4,5,6].map(n=>{const t=taken["t"+n]&&device!=="Tablet "+n;return `<button data-t="Tablet ${n}" ${t?`data-busy="${n}"`:""} aria-pressed="${device==="Tablet "+n}">${n}${t?"<small>in use · admin PIN for "+n+"_1</small>":device==="Tablet "+n?"<small>this iPad</small>":""}</button>`}).join("")}
+function askDevice(msg){showDevice();$("tabMsg").textContent=msg||"";$("tabOv").classList.add("on")}
+async function claim(name,fresh){try{return await rpc("checkin_claim_device",{p_id:devId(name),p_name:name,p_holder:CID,p_fresh:!!fresh})}catch(e){return "error"}}
+async function release(name){if(sb&&name){try{await rpc("checkin_release_device",{p_id:devId(name),p_holder:CID})}catch(err){}}}
+async function useDevice(name){await release(device);device=name;ls.set("ck_device",device);showDevice();$("tabOv").classList.remove("on")}
+async function takeDup(n){for(let k=1;k<10;k++){const name=`Tablet ${n}_${k}`;if(taken[devId(name)])continue;if((await claim(name,true))==="ok"){await useDevice(name);return}}$("tabMsg").textContent="No free copy of that number.";askDevice($("tabMsg").textContent)}
+function logoutHere(msg){device="";ls.set("ck_device","");askDevice(msg)}
+function renderDevs(){const el=$("devList");if(!el)return;if(!sb){el.innerHTML=`<p class="sub">Live sync is off, so only this iPad is known: ${esc(device||"no device")}.</p>`;return}
+  const now=Date.now(),A=devs.filter(d=>d.holder&&now-(d.seen||0)<LEASE).sort((a,b)=>String(a.name).localeCompare(b.name,undefined,{numeric:true}));
+  el.innerHTML=A.length?A.map(d=>`<div class="devrow"><b>${esc(d.name)}</b><span class="sub">${d.holder===CID?"this iPad · ":""}seen ${Math.max(0,Math.round((now-d.seen)/1000))} s ago</span><button type="button" class="ghost" data-kick="${esc(d.id)}">Log out device</button></div>`).join(""):'<p class="sub">No active devices.</p>'}
+$("devList").onclick=async e=>{const b=e.target.closest("[data-kick]");if(!b)return;const d=devs.find(x=>x.id===b.dataset.kick);if(!d)return;b.disabled=true;b.textContent="Logging out…";
+  try{await admin("kickDevice",{deviceId:d.id})}catch(err){b.textContent=err.message||"Failed";return}
+  if(d.holder===CID){closeSettings();logoutHere("This iPad was logged out. Pick the device you want to be.")}}
+$("tabList").onclick=async e=>{const b=e.target.closest("[data-t]");if(!b||b.disabled)return;const name=b.dataset.t;if(name===device){$("tabOv").classList.remove("on");return}
+  if(b.dataset.busy){dupBase=b.dataset.busy;$("tabOv").classList.remove("on");openLogin("dup");return}
+  b.disabled=true;$("tabMsg").textContent="";
+  const cr=await claim(name,true);if(cr!=="ok"){$("tabMsg").textContent=cr==="busy"?`${name} is in use on another iPad. Pick another number.`:"Cannot reach the server. Check the Wi-Fi and try again.";showDevice();return}
+  await useDevice(name)};
+const KICKMSG="The RBP admin logged this iPad out. Pick the device you want to be.";
+function setDevs(rows){const now=Date.now();taken={};devs=rows.map(x=>({id:x.id,name:x.name,holder:x.holder,seen:x.seen_at?Date.parse(x.seen_at):0,kick:x.kicked}));devs.forEach(d=>{if(d.holder&&d.holder!==CID&&now-d.seen<LEASE)taken[d.id]=true});
+  const mine=device&&devs.find(d=>d.id===devId(device));if(mine&&mine.kick===CID&&mine.holder!==CID){logoutHere(KICKMSG);return}
+  if($("tabOv").classList.contains("on"))showDevice();if(document.body.classList.contains("settings"))renderDevs()}
+async function loadDevs(){try{const{data}=await sb.from("checkin_devices").select("*");if(data)setDevs(data)}catch(e){}}
+function watchDevices(){
+  const keep=async()=>{await loadDevs();if(!device)return;const r=await claim(device);
+    if(r==="kicked"){logoutHere(KICKMSG);return}
+    if(r==="busy"){const lost=device;device="";ls.set("ck_device","");askDevice(`${lost} was taken by another iPad. Pick a free number.`)}};
+  keep();setInterval(keep,15000);
+}
+$("tabBtn").onclick=askDevice;
+function setMini(on){document.body.classList.toggle("mini",on);$("collapse").setAttribute("aria-expanded",String(!on));$("collapse").title=on?"Expand menu":"Collapse menu";ls.set("ck_mini",on?"1":"0")}
+$("collapse").onclick=()=>{setMini(!document.body.classList.contains("mini"))};
+setMini(ls.get("ck_mini")==="1"||(ls.get("ck_mini")==null&&innerWidth<900));
+
+/* ---- settings ---- */
+function openSettings(){const f=$("setForm");
+  $("mapForm").innerHTML=Object.keys(MAP_DEF).map(k=>`<label>${MAP_LBL[k]}<input name="map_${k}" value="${esc(M(k))}"></label>`).join("");
+  for(const k of["solo","team"]){const c={...COL_DEF[k],...((cfg.colors||{})[k]||{})};for(const x of["fg","bg","bg2"])f.elements[`col_${k}_${x}`].value=hex(c[x],COL_DEF[k][x]);f.elements[`col_${k}_grad`].checked=!!c.grad}
+  prevCols();
+  for(const el of f.elements){if(!el.name||el.name.startsWith("map_")||el.name.startsWith("col_"))continue;if(el.dataset.skip!==undefined){el.value="";continue}if(el.type==="checkbox"){el.checked=!!cfg[el.name];continue}el.value=cfg[el.name]??(el.tagName==="SELECT"?el.options[0].value:"")}
+  $("adminMsg").textContent="";
+  renderDevs();fillStock();renderSync();renderEvents();$("evNew").hidden=!!EV;$("setOv").classList.add("on");document.body.classList.add("settings");scrollTo(0,0)}
+function fillStock(){const st=cfg.stock||{};$("stockHead").innerHTML="<th></th>"+SIZES.map(z=>`<th class="n">${z}</th>`).join("")+'<th class="n">Total</th>';
+  $("stockBody").innerHTML=[["M","Men"],["W","Women"]].map(([k,l])=>`<tr><th>${l}</th>${SIZES.map(z=>`<td><input type="number" min="0" inputmode="numeric" data-stock="${k}_${z}" value="${esc((st[k]||{})[z]??"")}" style="width:4.2em;min-height:44px;font-size:17px;padding:6px;border-radius:8px;border:1.5px solid var(--line);background:var(--bg)"></td>`).join("")}<td class="n" id="stTot_${k}"></td></tr>`).join("");sumStock()}
+function sumStock(){for(const k of["M","W"])$("stTot_"+k).textContent=[...document.querySelectorAll(`[data-stock^="${k}_"]`)].reduce((a,i)=>a+(+i.value||0),0)}
+function readStock(){const o={M:{},W:{}};document.querySelectorAll("[data-stock]").forEach(i=>{const[k,z]=i.dataset.stock.split("_");if(i.value!=="")o[k][z]=Math.max(0,parseInt(i.value)||0)});return o}
+const fmtFull=t=>t?new Date(t).toLocaleString("en-GB",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit",second:"2-digit"}):"";
+async function renderSync(){const box=$("syncBox"),rb=$("rrBox");if(!box||!sb)return;const s=syncState||{};
+  rb.innerHTML=`<p style="margin:0 0 6px;font-weight:600;color:${s.at?(s.ok?"var(--ok)":"var(--red)"):"var(--mute)"}">${s.at?(s.ok?"✓ Last sync ":"! Last attempt failed ")+fmtFull(s.at):"No sync with RR14 yet"}${s.pending?` · <span style="color:#c77700">${s.pending} writes waiting for RR14</span>`:s.at?" · nothing waiting":""}</p>`+
+    (s.pull&&s.pull.pulled!=null?`<p class="small" style="margin:0 0 6px">Read ${s.pull.pulled} participants from RR14.${s.pull.note?" "+esc(s.pull.note)+".":""}${s.push&&s.push.note?" "+esc(s.push.note)+".":""}${!s.ok&&s.lastOk?" Last good sync "+fmtFull(s.lastOk)+".":""}</p>`:"")+
+    (s.pushError||s.pullError?`<p class="note warn">${esc([s.pushError,s.pullError].filter(Boolean).join(" · "))}</p>`:"");
+  try{
+    const[{count:total},{data:S},{data:O}]=await Promise.all([
+      sb.from("checkin_signatures").select("id",{count:"exact",head:true}).eq("event_id",EV&&EV.id),
+      sb.from("checkin_signatures").select("id,collector,bibs,device,created_at").eq("event_id",EV&&EV.id).order("created_at",{ascending:false}).limit(25),
+      sb.from("checkin_outbox").select("bib,fields,sent_at,last_error").eq("event_id",EV&&EV.id).not("fields->sigUrl","is",null).order("id",{ascending:false}).limit(300)]);
+    const st=g=>{const rows=(O||[]).filter(o=>String(o.fields.sigUrl||"").includes("id="+g.id+"&"));if(!rows.length)return"old";if(rows.every(o=>o.sent_at))return"sent";return rows.some(o=>!o.sent_at&&o.last_error)?"failed":"waiting"};
+    const lbl={sent:["✓","Sent to RR14","var(--ok)"],waiting:["…","Waiting for RR14","#c77700"],failed:["!","RR14 refused, will retry","var(--red)"],old:["✓","Saved","var(--mute)"]};
+    const R=(S||[]).map(g=>({...g,s:st(g)})),c=k=>R.filter(g=>g.s===k).length;
+    box.innerHTML=`<p style="margin:0 0 8px;font-weight:600">${total||0} signatures saved · last ${R.length}: ${c("sent")} sent to RR14, ${c("waiting")} waiting, ${c("failed")} failed</p>`+
+      (R.length?`<div class="scroll"><table class="stack"><thead><tr><th>Time</th><th>Bib</th><th>Device</th><th>File</th><th>RR14</th></tr></thead><tbody>${R.map(g=>{const L=lbl[g.s],by=byBib(g.collector);return `<tr><td class="n">${fmt(g.created_at)}</td><td>#${g.collector}${g.bibs.length>1?` +${g.bibs.length-1}`:""} ${by?esc(fullName(by)):""}</td><td>${esc(g.device||"")}</td><td style="color:var(--ok);font-weight:700">✓ Saved</td><td style="color:${L[2]};font-weight:700">${L[0]} ${L[1]}</td></tr>`}).join("")}</tbody></table></div>`:'<p class="sub">No signatures yet.</p>');
+  }catch(e){box.innerHTML='<p class="note warn">Could not read the signature list.</p>'}}
+let EVS=[];
+async function renderEvents(){const box=$("evList");box.innerHTML='<p class="sub">Loading…</p>';
+  try{EVS=(await admin("listEvents")).events||[]}catch(e){box.innerHTML=`<p class="note warn">${esc(e.message)}</p>`;return}
+  box.innerHTML=EVS.length?EVS.map(e=>`<div class="evrow"><b>${esc(e.name)}</b>${e.active?'<span class="on">Active</span>':""}<span class="sub">${esc(e.id)} · ${e.participants} participants · read ${e.list?esc(e.list):"<i>not set</i>"} · write ${e.write?esc(e.write):"<i>not set</i>"}</span>${e.active?"":`<button type="button" class="ghost" data-act="${esc(e.id)}">Make active</button>`}</div>`).join(""):'<p class="note warn">No events yet. Create the first one below.</p>';
+  const a=EVS.find(e=>e.active),f=$("setForm");f.elements.evList.placeholder=a&&a.list?"Stored: "+a.list:"https://…";f.elements.evWrite.placeholder=a&&a.write?"Stored: "+a.write:"https://…";
+  $("rrLinks").hidden=$("evSaveLinks").hidden=!a}
+$("evList").onclick=async e=>{const b=e.target.closest("[data-act]");if(!b)return;const ev=EVS.find(x=>x.id===b.dataset.act);
+  if(b.dataset.sure!=="1"){b.dataset.sure="1";b.textContent=`Switch every iPad to ${ev?ev.name:"this event"}?`;return}
+  b.disabled=true;b.textContent="Switching…";try{await admin("setActive",{eventId:b.dataset.act});$("evMsg").textContent="Switched. Every iPad loads the new event when it is free."}catch(err){$("evMsg").textContent=err.message}renderEvents()};
+$("evNewBtn").onclick=()=>{$("evNew").hidden=!$("evNew").hidden};
+$("evSaveLinks").onclick=async()=>{const f=$("setForm"),l=f.elements.evList.value.trim(),w=f.elements.evWrite.value.trim(),m=$("evMsg");
+  if(!l&&!w){m.textContent="Paste a link first.";return}
+  try{await admin("saveEvent",{listUrl:l||undefined,writeUrl:w||undefined});f.elements.evList.value=f.elements.evWrite.value="";m.textContent="RR14 links saved.";renderEvents()}catch(err){m.textContent=err.message}};
+$("setForm").addEventListener("input",e=>{if(e.target.name==="newEvName"){const i=$("setForm").elements.newEvId;if(!i.dataset.touched)i.value=norm(e.target.value).replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"").slice(0,40)}if(e.target.name==="newEvId")e.target.dataset.touched="1"});
+$("evCreate").onclick=async()=>{const f=$("setForm").elements,m=$("evMsg"),b=$("evCreate");b.disabled=true;
+  try{const r=await admin("createEvent",{name:f.newEvName.value.trim(),eventId:f.newEvId.value.trim(),listUrl:f.newEvList.value.trim(),writeUrl:f.newEvWrite.value.trim(),copy:f.newEvCopy.checked});
+    for(const k of["newEvName","newEvId","newEvList","newEvWrite"])f[k].value="";delete f.newEvId.dataset.touched;$("evNew").hidden=true;
+    m.textContent=r.active?"Event created and active.":"Event created. Make it active when you want the iPads to use it.";renderEvents();if(r.active)loadCfg().then(()=>loadAll()).then(soon)}
+  catch(err){m.textContent=err.message}finally{b.disabled=false}};
+function closeSettings(){$("setOv").classList.remove("on");document.body.classList.remove("settings");if(evReload)reloadWhenIdle()}
+/* ---- admin gate: settings are central, only the RBP admin opens them ---- */
+let adminTok=null,unlockUntil=0,firstSetup=false;
+async function admin(action,extra){const{data,error}=await sb.functions.invoke("checkin-admin",{body:{action,token:adminTok,...(extra||{})}});
+  if(error){let m=error.message;try{const j=await error.context.json();if(j&&j.error)m=j.error}catch(e){}if(/Locked/.test(m))unlockUntil=0;throw new Error(m)}
+  if(data&&data.error)throw new Error(data.error);return data}
+let loginFor="settings",dupBase=null;
+$("gear").onclick=()=>{if(Date.now()<unlockUntil){openSettings();return}openLogin("settings")};
+async function openLogin(purpose){loginFor=purpose;
+  const f=$("loginForm");f.reset();$("loginMsg").textContent="";
+  let st={hasPin:true};try{st=await admin("status")}catch(e){$("loginMsg").textContent="Cannot reach the server: "+e.message}
+  firstSetup=!st.hasPin;$("loginBtn").textContent=firstSetup?"Set PIN":"Unlock";
+  if(purpose==="dup"&&firstSetup){askDevice("Set the RBP admin PIN in settings first.");return}
+  $("loginSub").textContent=purpose==="dup"?`Tablet ${dupBase} is active on another iPad. The RBP admin PIN lets this iPad run as ${dupBase}_1.`:firstSetup?"First setup: choose the RBP admin PIN or password. Every device will use it.":"Settings are central for every device. Only the RBP admin can open them.";
+  $("loginOv").classList.add("on");f.elements.pass.focus()}
+$("loginCancel").onclick=()=>$("loginOv").classList.remove("on");
+$("loginForm").onsubmit=async e=>{e.preventDefault();const f=e.target,m=$("loginMsg"),pw=f.elements.pass.value;
+  if(firstSetup&&pw.length<4){m.textContent="Use at least 4 characters or digits.";return}
+  $("loginBtn").disabled=true;
+  try{const r=await admin("unlock",{pin:pw});adminTok=r.token;unlockUntil=Date.now()+(r.ttl||600000)-15000}
+  catch(err){m.textContent=err.message||"Wrong PIN or password.";f.elements.pass.value="";return}
+  finally{$("loginBtn").disabled=false}
+  $("loginOv").classList.remove("on");if(loginFor==="dup"){await takeDup(dupBase);return}
+  openSettings()};
+$("syncNow").onclick=async e=>{const b=e.currentTarget;b.disabled=true;b.textContent="Syncing…";try{const r=await admin("syncNow"),x=(r.events&&EV&&r.events[EV.id])||r;syncState=x;renderSync();b.textContent=x.ok?"Synced":"Sync failed, see above"}catch(err){b.textContent=err.message}setTimeout(()=>{b.disabled=false;b.textContent="Sync from RR14 now"},3000)};
+$("retryRR").onclick=async e=>{const b=e.currentTarget;b.disabled=true;try{await admin("retryOutbox");b.textContent="Queued again"}catch(err){b.textContent=err.message}setTimeout(()=>{b.disabled=false;b.textContent="Retry failed RR14 writes"},3000)};
+$("pinBtn").onclick=async()=>{const i=$("setForm").elements.newPin,m=$("adminMsg");if(i.value.length<4){m.textContent="Use at least 4 characters or digits.";return}
+  try{await admin("changePin",{pin:i.value});i.value="";m.textContent="PIN changed for every device."}catch(err){m.textContent=err.message}};
+$("signOut").onclick=async()=>{await release(device);ls.set("ck_device","");try{await sb.auth.signOut()}catch(e){}location.reload()};
+function alertBox(t){let b=$("setErr");if(!b){b=document.createElement("p");b.id="setErr";b.className="note warn";$("setForm").appendChild(b)}b.textContent=t}
+function readCols(){const f=$("setForm"),o={};for(const k of["solo","team"])o[k]={fg:f.elements[`col_${k}_fg`].value,bg:f.elements[`col_${k}_bg`].value,bg2:f.elements[`col_${k}_bg2`].value,grad:f.elements[`col_${k}_grad`].checked};return o}
+function prevCols(){const c=readCols();for(const k of["solo","team"])$("prev_"+k).style.cssText=bibCss(k,c[k])}
+$("setForm").addEventListener("input",e=>{if(e.target.dataset&&e.target.dataset.stock)sumStock();if(e.target.name&&e.target.name.startsWith("col_"))prevCols()});
+$("setLock").onclick=()=>{unlockUntil=0;closeSettings()};
+$("setCancel").onclick=()=>closeSettings();
+/* ---- edit one team member (pencil) ---- */
+let editBib=null;
+$("detail").addEventListener("click",e=>{const b=e.target.closest("[data-edit]");if(!b)return;const m=byBib(+b.dataset.edit);if(!m)return;editBib=m.bib;
+  $("memBib").textContent=m.bib;$("memFlag").textContent=flag(m.nat);$("memH").textContent=fullName(m);$("memSub").textContent=`${m.team} · shirt ${m.size}`;$("memFields").innerHTML=fieldsHtml("e_",m);$("memMsg").textContent="Saved here at once, in RR14 within 30 seconds.";$("memOv").classList.add("on")});
+$("memCancel").onclick=()=>$("memOv").classList.remove("on");
+$("memForm").onsubmit=async e=>{e.preventDefault();const m=byBib(editBib),upd={};if(!m)return;
+  for(const k of FK){let v=$("e_"+k).value.trim();if(k==="nat")v=v.toUpperCase();if(v!==(m[k]||""))upd[k]=v}
+  if(Object.keys(upd).length){try{await RR.edit(m.bib,upd)}catch(err){$("memMsg").textContent="Could not save: "+err.message;return}
+    const q=$("qid"+m.bib);if(q)q.innerHTML=esc(m.qid||"no QID")+" "+qidMark(qidCheck(m));if(m.bib===sel&&$("card"))$("card").outerHTML=bibCard(m)}
+  $("memOv").classList.remove("on")};
+$("setForm").onsubmit=async e=>{e.preventDefault();const f=e.target,n={map:{}};
+  n.colors=readCols();n.stock=readStock();
+  for(const el of f.elements){if(!el.name||el.name.startsWith("col_")||el.dataset.skip!==undefined)continue;if(el.name.startsWith("map_"))n.map[el.name.slice(4)]=el.value.trim()||MAP_DEF[el.name.slice(4)];else if(el.type==="checkbox")n[el.name]=el.checked;else n[el.name]=el.value.trim()}
+  if(!EV){alertBox("Create or pick an event first.");return}
+  try{await admin("saveConfig",{value:n})}catch(err){alertBox("Settings not saved: "+err.message);return}
+  cfg={...n,map:{...MAP_DEF,...n.map}};
+  closeSettings();if(sel&&!ink){const p=byBib(sel);if($("card"))$("card").outerHTML=bibCard(p)}render()};
+
+/* ---- routing ---- */
+function route(){const h=location.hash.slice(1),v=["checkin","merch","stats"].includes(h)?h:"checkin";
+  document.querySelectorAll(".view").forEach(e=>e.classList.toggle("on",e.id==="v-"+v));
+  document.querySelectorAll("aside nav a").forEach(a=>a.dataset.v===v?a.setAttribute("aria-current","page"):a.removeAttribute("aria-current"));render()}
+addEventListener("hashchange",()=>{if(document.body.classList.contains("settings"))closeSettings();route()});
+
+/* ---- bib pickup ---- */
+const status=p=>p.merch?'<span class="tag ok">Package issued</span>':p.sigTime?'<span class="tag ok">Bib collected</span>':'<span class="tag">Waiting</span>';
+function renderList(){
+  const q=norm($("q").value.trim());
+  if(!q){$("res").innerHTML="";return}
+  const L=P.filter(p=>norm(`${p.bib} ${fullName(p)} ${p.team} ${p.qid||""}`).includes(q)).sort((a,b)=>a.bib-b.bib).slice(0,8);
+  $("res").innerHTML=L.length?L.map(p=>`<li><button class="row" role="option" data-bib="${p.bib}" aria-selected="${sel===p.bib}"><span class="num"><span class="bb" style="${bibStyle(p)}">${p.bib}</span></span><span><span class="nm">${esc(fullName(p))}</span> <span class="flag">${flag(p.nat)}</span><br><span class="sub">${p.team?"Team · "+esc(p.team):"Solo"}</span></span>${status(p)}</button></li>`).join(""):'<li class="empty">No match.</li>';
+}
+function select(bib){sel=bib;lastRR="";$("q").value="";const p=byBib(bib);picked=new Set(p.sigTime?teamOf(p).filter(m=>!m.sigTime).map(m=>m.bib):[bib]);$("q").blur();renderList();renderDetail();saveDraft()}
+function bibCard(p){const v=x=>x?`<dd>${esc(x)}</dd>`:`<dd class="none">not set</dd>`;
+  return `<div class="bib" id="card"><button type="button" class="pen" data-edit="${p.bib}" aria-label="Edit details"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></button><div class="team">${p.team?esc(p.team):"Solo"}</div><div class="line"><span class="big" style="${bibStyle(p)}">${p.bib}</span><span class="flag" title="${esc(p.nat)}">${flag(p.nat)}</span><span class="who">${esc(fullName(p))}</span></div>
+  <dl class="info"><div><dt>QID</dt>${(()=>{const c=qidCheck(p);return `<dd>${p.qid?esc(p.qid):`<span class="none">not set</span>`} ${qidMark(c)}${c.s!=="none"?`<span class="qvt ${c.s}">${esc(c.t)}</span>`:""}</dd>`})()}</div><div><dt>Date of birth</dt>${p.dob?`<dd>${fdate(p.dob)}</dd>`:v("")}</div><div><dt>Category</dt>${v(p.ageGroup)}</div></dl>
+  <dl class="info r2"><div><dt>Nation</dt>${v(p.nat)}</div><div><dt>T-shirt</dt>${v(p.size)}</div><div><dt>Email</dt>${v(p.email)}</div><div><dt>Phone</dt>${v(p.phone)}</div><div><dt>ICE contact</dt>${v([p.ice,p.icePhone].filter(Boolean).join(" · "))}</div></dl><div class="stripe"></div></div>`}
+function renderDetail(){
+  const d=$("detail"),p=sel&&byBib(sel);
+  if(!p){d.innerHTML=lastRR||'<div class="empty">Search or scan a QR code to pick a participant.</div>';return}
+  let h=bibCard(p);
+  if(p.sigTime){const by=byBib(p.by),grp=groupOf(p.sigId);
+    h+=`<div class="panel"><h3>Bib already collected</h3><p>${by&&by.bib!==p.bib?`Collected by teammate <b>${esc(fullName(by))}</b> (#${by.bib})`:"Collected in person"} at ${fmt(p.sigTime)} on ${esc(p.desk||"unknown device")}.${grp.length>1?` Same pickup: ${grp.map(m=>"#"+m.bib).join(", ")}.`:""} ${p.merch?"Package issued.":"Package not issued yet."}</p><img class="sig" id="sigimg" alt="Signature"><div class="acts">${grp.some(m=>m.merch)?"":`<button class="ghost" id="undo">Undo this pickup</button>`}</div></div>`}
+  const open=teamOf(p).filter(m=>!m.sigTime);
+  if(open.length){
+    if(p.team){const selfOpen=!p.sigTime,mates=open.filter(m=>m.bib!==p.bib),row=m=>`<div class="mem"><input type="checkbox" id="m${m.bib}" data-m="${m.bib}" ${picked.has(m.bib)?"checked":""}><label for="m${m.bib}"><span class="num"><span class="bb" style="${bibStyle(m)}">${m.bib}</span></span><span class="flag">${flag(m.nat)}</span><span class="mn">${esc(fullName(m))}${m.bib===p.bib?" (self)":""}</span><span class="qid" id="qid${m.bib}">${esc(m.qid||"no QID")} ${qidMark(qidCheck(m))}</span></label><button type="button" class="pen" data-edit="${m.bib}" aria-label="Edit ${esc(fullName(m))}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></button></div>`;
+      h+=`<div class="panel"><h3>Collect for whom?</h3><div class="choice">${selfOpen?`<button id="mSelf" aria-pressed="true">Pick up for myself</button>`:""}${mates.length?`<button id="mTeam" aria-pressed="${!selfOpen}">Pick up for team members</button>`:""}</div><div id="mates" ${selfOpen?"hidden":""}><p class="sub">Untick anyone who collects their own bib. Everyone ticked gets CollectedBy #${p.bib} in RR14.</p>${selfOpen?row(p):""}${mates.map(row).join("")}</div></div>`}
+    const n=p.team?picked.size:1;
+    h+=`<div class="panel"><h3>Signature${n>1?` for ${n} people`:""}</h3><div class="pad" id="pad"><canvas id="cv"></canvas><span></span><em>Sign above the line</em></div><div class="acts"><button class="ghost" id="clr">Clear</button><button class="pri" id="ok" disabled>Confirm pickup</button></div></div>`;
+  }
+  d.innerHTML=h;
+  if(p.sigTime){RR.sig(p.sigId).then(s=>{const i=$("sigimg");if(i&&s)i.src=s;else if(i)i.remove()}).catch(()=>{const i=$("sigimg");if(i)i.remove()});const u=$("undo");if(u)u.onclick=()=>undo(p.sigId)}
+  d.querySelectorAll("[data-m]").forEach(c=>c.onchange=()=>{const b=+c.dataset.m;c.checked?picked.add(b):picked.delete(b);refreshCount()});
+  const ms=$("mSelf"),mt=$("mTeam"),mw=$("mates");
+  if(ms)ms.onclick=()=>{ms.setAttribute("aria-pressed","true");if(mt)mt.setAttribute("aria-pressed","false");mw.hidden=true;picked=new Set([p.bib]);refreshCount()};
+  if(mt)mt.onclick=()=>{mt.setAttribute("aria-pressed","true");if(ms)ms.setAttribute("aria-pressed","false");mw.hidden=false;picked=new Set(open.map(m=>m.bib));mw.querySelectorAll("[data-m]").forEach(c=>c.checked=true);refreshCount()};
+  if($("cv"))pad();
+}
+let ink=false;
+/* ---- in-progress session survives a reload (e.g. an app update) on this iPad ---- */
+const ss={get(k){try{return sessionStorage.getItem(k)}catch(e){return null}},set(k,v){try{v==null?sessionStorage.removeItem(k):sessionStorage.setItem(k,v)}catch(e){}}};
+function saveDraft(){if(!sel||!$("cv")){ss.set("ck_draft",null);return}const mw=$("mates"),f=id=>$(id)?$(id).value:undefined;
+  ss.set("ck_draft",JSON.stringify({sel,picked:[...picked],team:!!(mw&&!mw.hidden),sig:ink?$("cv").toDataURL("image/png"):null}))}
+function restoreDraft(){let d;try{d=JSON.parse(ss.get("ck_draft"))}catch(e){}if(!d||!d.sel)return;const p=byBib(d.sel);if(!p){ss.set("ck_draft",null);return}
+  select(d.sel);if(!$("cv"))return;
+  if(d.team&&$("mTeam"))$("mTeam").click();
+  const ok=new Set(teamOf(p).filter(m=>!m.sigTime).map(m=>m.bib));picked=new Set((d.picked||[]).filter(b=>ok.has(b)));if(!p.team)picked=new Set([p.bib]);
+  document.querySelectorAll("[data-m]").forEach(c=>c.checked=picked.has(+c.dataset.m));
+  if(d.sig&&d.sig.startsWith("data:image/png")){const img=new Image();img.onload=()=>{const cv=$("cv");if(!cv)return;const r=cv.getBoundingClientRect();cv.getContext("2d").drawImage(img,0,0,r.width,r.height);ink=true;refreshCount()};img.src=d.sig}
+  refreshCount();
+  $("qrmsg").textContent=`Restored the open session for #${p.bib} after an update.`;
+}
+function refreshCount(){const p=byBib(sel),n=p.team?picked.size:1,h=$("pad").parentElement.querySelector("h3");h.textContent=n>1?`Signature for ${n} people`:"Signature";$("ok").disabled=!ink||n<1;saveDraft()}
+function pad(){
+  const cv=$("cv"),ctx=cv.getContext("2d");let drawing=false,last=null;ink=false;
+  const r=cv.getBoundingClientRect(),k=devicePixelRatio||1;cv.width=r.width*k;cv.height=r.height*k;ctx.scale(k,k);ctx.lineWidth=2.6;ctx.lineCap=ctx.lineJoin="round";ctx.strokeStyle="#111";
+  if(window.padRO)padRO.disconnect();
+  window.padRO=new ResizeObserver(()=>{const b=cv.getBoundingClientRect(),k=devicePixelRatio||1;if(!b.width||Math.abs(b.width*k-cv.width)<2)return;
+    const t=document.createElement("canvas");t.width=cv.width;t.height=cv.height;t.getContext("2d").drawImage(cv,0,0);
+    cv.width=b.width*k;cv.height=b.height*k;ctx.setTransform(k,0,0,k,0,0);ctx.lineWidth=2.6;ctx.lineCap=ctx.lineJoin="round";ctx.strokeStyle="#111";ctx.drawImage(t,0,0,b.width,b.height)});
+  padRO.observe(cv);
+  const pt=e=>{const b=cv.getBoundingClientRect();return[e.clientX-b.left,e.clientY-b.top]};
+  cv.onpointerdown=e=>{drawing=true;last=pt(e);cv.setPointerCapture(e.pointerId)};
+  cv.onpointermove=e=>{if(!drawing)return;const q=pt(e);ctx.beginPath();ctx.moveTo(...last);ctx.lineTo(...q);ctx.stroke();last=q;if(!ink){ink=true;refreshCount()}};
+  cv.onpointerup=cv.onpointercancel=()=>{if(drawing&&ink)saveDraft();drawing=false};
+  $("clr").onclick=()=>{ctx.clearRect(0,0,cv.width,cv.height);ink=false;refreshCount()};
+  $("ok").onclick=()=>{if(ink)doConfirm(cv)};
+}
+function exportSig(cv){const o=document.createElement("canvas"),w=600,h=Math.round(600*cv.height/cv.width);o.width=w;o.height=h;const c=o.getContext("2d");c.fillStyle="#fff";c.fillRect(0,0,w,h);c.drawImage(cv,0,0,w,h);return o.toDataURL("image/png")}
+async function doConfirm(cv){
+  const p=byBib(sel),btn=$("ok");
+  const covered=p.team?[...picked].sort((a,b)=>a-b):[p.bib];if(!covered.length)return;
+  if(!EV){$("detail").insertAdjacentHTML("beforeend",'<div class="note warn">No active event. The RBP admin picks one in Settings.</div>');return}
+  btn.disabled=true;btn.textContent="Saving…";
+  const sigId=`s${p.bib}-${Date.now()}`;
+  try{
+    await RR.upload(sigId,exportSig(cv));
+    const sc=!p.team?"SOLO":covered.length===1&&covered[0]===p.bib?"SELF":"TEAM",qv={};
+    covered.forEach(b=>qv[b]=QV[qidCheck(byBib(b)).s]);
+    await RR.collect({p_collector:p.bib,p_bibs:covered,p_sig_id:sigId,p_path:EV.id+"/"+sigId+".png",p_link_base:CONF.supabaseUrl.replace(/\/$/,"")+"/functions/v1/checkin-sig",p_device:device||"unknown",p_scope:sc,p_qv:qv});
+    const now=new Date().toISOString();covered.forEach(b=>Object.assign(byBib(b),{sigId,sigTime:now,by:p.bib,scope:sc,desk:device||"unknown",qv:qv[b]}));
+    lastRR=`<div class="note">${esc(fullName(p))} collected ${covered.length>1?covered.length+" bibs ("+covered.map(b=>"#"+b).join(", ")+")":"the bib"}. Sent to the package desk and to RR14.</div>`;
+    sel=null;ss.set("ck_draft",null);$("q").value="";$("q").focus();render();
+  }catch(e){btn.disabled=false;btn.textContent="Confirm pickup";$("detail").insertAdjacentHTML("beforeend",`<div class="note warn">Could not save: ${esc(e&&e.message||e)}. Try again.</div>`)}
+}
+async function undo(sigId){try{await RR.undo(sigId);groupOf(sigId).forEach(m=>Object.assign(m,{sigId:null,sigTime:null,sigUrl:null,by:null,scope:null,desk:null,qv:null}))}catch(e){$("detail").insertAdjacentHTML("beforeend",`<div class="note warn">Could not undo: ${esc(e.message)}</div>`);return}render()}
+
+/* ---- QR from a photo (live camera needs the hosted version) ---- */
+$("qr").onchange=async e=>{const f=e.target.files[0];e.target.value="";if(!f)return;const msg=$("qrmsg");msg.textContent="Reading QR code…";
+  try{const img=await createImageBitmap(f),s=Math.min(1,1400/Math.max(img.width,img.height)),c=document.createElement("canvas");c.width=img.width*s;c.height=img.height*s;const x=c.getContext("2d");x.drawImage(img,0,0,c.width,c.height);
+    const r=window.jsQR&&jsQR(x.getImageData(0,0,c.width,c.height).data,c.width,c.height);
+    if(!r){msg.textContent="No QR code found. Try again closer, or type the bib.";return}
+    const m=String(r.data).match(/\d+/g),bib=m&&+m[m.length-1],p=bib&&byBib(bib);
+    if(p){msg.textContent=`Scanned bib ${bib}.`;$("q").value=String(bib);renderList();select(bib)}else msg.textContent="QR read, but no participant matches it.";
+  }catch(err){msg.textContent="Could not read the photo. Type the bib instead."}};
+
+/* ---- package desk ---- */
+function groups(){const g={};P.forEach(p=>{if(p.sigId)(g[p.sigId]=g[p.sigId]||[]).push(p)});return Object.entries(g).map(([id,ms])=>({id,ms:ms.sort((a,b)=>a.bib-b.bib),by:byBib(ms[0].by)||ms[0],time:ms[0].sigTime,done:ms.every(m=>m.merch)}))}
+const UNDO=10000;let pend={};
+function shirtSum(ms){const by={M:{},W:{}};ms.forEach(m=>{const x=m.sex==="W"?"W":"M";by[x][m.size]=(by[x][m.size]||0)+1});
+  const ord=o=>[...SIZES.filter(z=>o[z]),...Object.keys(o).filter(z=>!SIZES.includes(z))];
+  const grp=(o,k,l)=>{const z=ord(o);return z.length?`<span class="sg ${k}"><span class="sx">${l}</span><span class="chips">${z.map(x=>`<span class="sz" aria-label="${o[x]} ${l} ${esc(x||"no size")}"><i>${o[x]}×</i>${esc(x||"?")}</span>`).join("")}</span></span>`:""};
+  return grp(by.M,"m","Men")+grp(by.W,"w","Women")}
+function renderMerch(){
+  const G=groups(),now=Date.now();
+  const L=G.filter(g=>!g.done).sort((a,b)=>((pend[a.id]?1:0)-(pend[b.id]?1:0))||(pend[a.id]&&pend[b.id]?pend[a.id]-pend[b.id]:0)||String(a.time).localeCompare(b.time));
+  $("mcount").textContent=L.length?`${L.length} waiting · oldest first`:"";
+  $("desk").innerHTML=L.length?L.map(g=>{const c=g.by,n=g.ms.length,mine=g.ms.some(m=>m.bib===c.bib),pd=pend[g.id];
+    const what=!c.team?"Solo":`${esc(c.team)} · ${n===1&&mine?"own only":`for ${n}${mine?"":" (not self)"}`}`;
+    const style=c.team?bibStyle(c):"";
+    return `<div class="mrow${c.team?" team":""}${pd?" pend":""}" style="${style}">${pd?`<i class="fill" style="animation-delay:-${UNDO-(pd-now)}ms"></i>`:""}<span class="bb mb" style="${bibStyle(c)}">${c.bib}</span><span class="flag">${flag(c.nat)}</span><span class="mn"><span class="nm">${esc(fullName(c))}</span><span class="mw">${what}${n>1?` · ${g.ms.filter(m=>m.bib!==c.bib).map(m=>"#"+m.bib).join(" ")}`:""}</span></span><span class="sh">${shirtSum(g.ms)}</span>${pd?`<button class="ghost cbtn" data-undo="${esc(g.id)}">Undo · ${Math.max(1,Math.ceil((pd-now)/1000))}</button>`:`<button class="pri cbtn" data-give="${esc(g.id)}">Collected</button>`}</div>`}).join(""):`<div class="empty">Nobody is waiting. Bibs collected at check-in appear here automatically.</div>`;
+  const H=G.filter(g=>g.done).sort((a,b)=>String(b.ms[0].merchTime).localeCompare(a.ms[0].merchTime));
+  $("hist").innerHTML=H.length?`<table><tbody>${H.map(g=>`<tr><td class="n">${fmt(g.ms[0].merchTime)}</td><td><span class="bb" style="${bibStyle(g.by)}">${g.by.bib}</span></td><td>${esc(fullName(g.by))}${g.ms.length>1?` <span class="sub">+${g.ms.length-1} (${g.ms.filter(m=>m.bib!==g.by.bib).map(m=>"#"+m.bib).join(", ")})</span>`:""}</td><td>${g.ms.map(m=>esc(m.size)).join(" ")}</td><td class="sub">${esc(g.ms[0].merchDesk||"")}</td></tr>`).join("")}</tbody></table>`:'<p class="sub">No packages issued yet.</p>';
+  clearTimeout(window.mTick);if(Object.keys(pend).length)window.mTick=setTimeout(tickPend,Math.max(50,Math.min(1000,Math.min(...Object.values(pend))-Date.now())));
+}
+async function tickPend(){const now=Date.now();for(const id of Object.keys(pend))if(pend[id]<=now){delete pend[id];await give(id,true)}if(location.hash.slice(1)==="merch")renderMerch()}
+async function give(id,on){const t=on?new Date().toISOString():null;try{await RR.issue(id,on)}catch(e){$("mcount").textContent="Could not save a package: "+e.message+". Tap Collected again.";return}for(const m of groupOf(id))Object.assign(m,{merch:on,merchTime:t,merchDesk:on?device||"unknown":null});render()}
+
+/* ---- statistics ---- */
+function renderStats(){
+  const n=P.length,sig=P.filter(p=>p.sigTime).length,mer=P.filter(p=>p.merch).length,solo=P.filter(p=>!p.team),team=P.filter(p=>p.team),pc=(a,b)=>b?Math.round(a/b*100):0;
+  const k=[["Bibs collected",sig,n,"of all participants"],["Packages issued",mer,n,"shirts and bags"],["Waiting at package desk",sig-mer,sig,"signed, package not issued"],["Solo · team",`${solo.filter(p=>p.sigTime).length}/${solo.length} · ${team.filter(p=>p.sigTime).length}/${team.length}`,null,"bibs collected"]];
+  $("kpis").innerHTML=k.map(([l,v,t,s])=>`<div class="kpi"><small>${l}</small><b>${v}${t!=null?`<span style="font-size:.45em;color:var(--mute)"> / ${t}</span>`:""}</b><small>${s}${t!=null?` · ${pc(v,t)}%`:""}</small>${t!=null?`<div class="meter"><i style="width:${pc(v,t)}%"></i></div>`:""}</div>`).join("");
+  const st=cfg.stock||{},left=(k,z,iss)=>{const v=(st[k]||{})[z];return v==null?"—":`<span style="color:${v-iss<0?"var(--red)":v-iss<=3?"#c77700":"inherit"};font-weight:700">${v-iss}</span>`};
+  $("sizes").innerHTML=`<thead><tr><th>Size</th><th class="n">Men issued</th><th class="n">Men left</th><th class="n">Women issued</th><th class="n">Women left</th><th class="n">Waiting</th><th class="n">Not here</th></tr></thead><tbody>${SIZES.map(z=>{const a=P.filter(p=>p.size===z),iM=a.filter(p=>p.merch&&p.sex!=="W").length,iW=a.filter(p=>p.merch&&p.sex==="W").length;return `<tr><td><b>${z}</b></td><td class="n">${iM}</td><td class="n">${left("M",z,iM)}</td><td class="n">${iW}</td><td class="n">${left("W",z,iW)}</td><td class="n">${a.filter(p=>p.sigTime&&!p.merch).length}</td><td class="n">${a.filter(p=>!p.sigTime).length}</td></tr>`}).join("")}</tbody>`;
+  const hrs={};P.forEach(p=>{if(p.sigTime){const h=new Date(p.sigTime).getHours();hrs[h]=(hrs[h]||0)+1}});
+  const keys=Object.keys(hrs).map(Number).sort((a,b)=>a-b),mx=Math.max(1,...Object.values(hrs));
+  $("hours").innerHTML=keys.length?keys.map(h=>`<div class="hrow"><span>${String(h).padStart(2,"0")}:00</span><span class="t"><i style="width:${hrs[h]/mx*100}%"></i></span><span class="n">${hrs[h]}</span></div>`).join(""):'<p class="empty">No signatures yet.</p>';
+  const dv={};P.forEach(p=>{if(p.desk){(dv[p.desk]=dv[p.desk]||{b:0,m:0}).b++}if(p.merchDesk){(dv[p.merchDesk]=dv[p.merchDesk]||{b:0,m:0}).m++}});
+  const dk=Object.keys(dv).sort();
+  $("devs").innerHTML=dk.length?`<thead><tr><th>Device</th><th class="n">Bibs</th><th class="n">Packages</th></tr></thead><tbody>${dk.map(d=>`<tr><td>${esc(d)}</td><td class="n">${dv[d].b}</td><td class="n">${dv[d].m}</td></tr>`).join("")}</tbody>`:'<tbody><tr><td class="empty">No activity yet.</td></tr></tbody>';
+  const ev=[];groups().forEach(g=>{ev.push([g.time,`#${g.by.bib} ${fullName(g.by)} signed${g.ms.length>1?` for ${g.ms.length}`:""}`,g.ms[0].desk]);if(g.done)ev.push([g.ms[0].merchTime,`#${g.by.bib} ${fullName(g.by)} got the package`,g.ms[0].merchDesk])});
+  ev.sort((a,b)=>String(b[0]).localeCompare(a[0]));
+  $("recent").innerHTML=ev.length?`<table class="stack"><thead><tr><th>Time</th><th>What</th><th>Device</th></tr></thead><tbody>${ev.slice(0,12).map(([t,s,d])=>`<tr><td class="n">${fmt(t)}</td><td>${esc(s)}</td><td>${esc(d||"")}</td></tr>`).join("")}</tbody></table>`:'<p class="empty">No activity yet.</p>';
+}
+
+function render(){$("slogan").textContent=cfg.slogan||"Made with Passion. Driven by Data.";const v=location.hash.slice(1);if(v==="merch")renderMerch();else if(v==="stats")renderStats();else{renderList();if(!$("cv")||!sel)renderDetail()}}
+
+/* ---- events ---- */
+$("q").oninput=()=>{renderList();const v=$("q").value.trim();if(/^\d+$/.test(v)&&byBib(+v)&&String(byBib(+v).bib)===v&&!P.some(p=>String(p.bib).startsWith(v)&&p.bib!==+v))select(+v)};
+$("q").onkeydown=e=>{if(e.key==="Enter"){const v=$("q").value.trim(),m=v.match(/\d+/g),b=m&&+m[m.length-1];if(b&&byBib(b))select(b);else{const f=$("res").querySelector("[data-bib]");if(f)select(+f.dataset.bib)}}};
+$("res").onclick=e=>{const b=e.target.closest("[data-bib]");if(b)select(+b.dataset.bib)};
+$("desk").onclick=e=>{const g=e.target.closest("[data-give]"),u=e.target.closest("[data-undo]");if(g){pend[g.dataset.give]=Date.now()+UNDO;renderMerch()}if(u){delete pend[u.dataset.undo];renderMerch()}};
+
+/* ---- boot ---- */
+{const so=$("setOv");so.classList.add("page");so.removeAttribute("role");so.removeAttribute("aria-modal");document.querySelector("main").appendChild(so)}
+$("ver").textContent="v"+APP_VERSION;showDevice();route();
+let started=false,subOnce=false;
+async function start(){if(started)return;started=true;$("mode").textContent="Connecting…";
+  try{await loadCfg();await loadAll();evBoot=true}catch(e){started=false;$("mode").textContent="Cannot load data, retrying";setTimeout(start,5000);return}
+  render();if(!device)askDevice();watchDevices();restoreDraft();
+  if(!EV){lastRR='<div class="note warn">No active event yet. The RBP admin creates one in Settings → Events.</div>';render()}
+  sb.channel("checkin")
+    .on("postgres_changes",{event:"*",schema:"public",table:"checkin_participants",...(EV?{filter:"event_id=eq."+EV.id}:{})},pl=>{if(pl.eventType==="DELETE"){P=P.filter(p=>p.bib!==(pl.old||{}).bib)}else{const n=fromRow(pl.new),i=P.findIndex(p=>p.bib===n.bib);if(i<0)P.push(n);else P[i]=n}soon()})
+    .on("postgres_changes",{event:"*",schema:"public",table:"checkin_devices"},()=>loadDevs())
+    .on("postgres_changes",{event:"*",schema:"public",table:"checkin_events"},pl=>applyEvent(pl.new))
+    .subscribe(st=>{if(st==="SUBSCRIBED"){$("mode").textContent="Live sync on";if(subOnce)loadAll().then(soon).catch(()=>{});subOnce=true}
+      else if(st==="CHANNEL_ERROR"||st==="TIMED_OUT"||st==="CLOSED")$("mode").textContent="Reconnecting…"});
+  setInterval(()=>loadAll().then(soon).catch(()=>{}),120000);
+  /* updates: a new version loads only when no participant is open on this iPad */
+  setInterval(async()=>{try{const r=await fetch("version.json?t="+Date.now(),{cache:"no-store"}),j=await r.json();
+    if(j.version&&j.version!==APP_VERSION&&idle())location.reload()}catch(e){}},60000);
+}
+if(!sb){$("mode").textContent="Not set up";$("detail").innerHTML='<div class="note warn">config.js has no Supabase URL and key yet.</div>'}
+else{
+  $("authForm").onsubmit=async e=>{e.preventDefault();const f=e.target;$("authBtn").disabled=true;$("authMsg").textContent="";
+    const{error}=await sb.auth.signInWithPassword({email:f.elements.email.value.trim(),password:f.elements.password.value});
+    $("authBtn").disabled=false;if(error){$("authMsg").textContent=error.message;return}
+    $("authOv").classList.remove("on");start()};
+  sb.auth.getSession().then(({data})=>{if(data&&data.session)start();else{$("mode").textContent="Signed out";$("authOv").classList.add("on")}});
+  sb.auth.onAuthStateChange(ev=>{if(ev==="SIGNED_OUT"&&started)location.reload()});
+}
+}
+</script>
+</body>
+</html>
