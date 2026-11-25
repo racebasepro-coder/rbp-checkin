@@ -354,7 +354,7 @@ body.settings #gear{background:var(--red);color:#fff}
 "use strict";
 {
 let syncState=null,EV=null;
-const APP_VERSION="1.3.3";
+const APP_VERSION="1.3.4";
 const SIZES=["XS","S","M","L","XL","XXL"];
 const FIELDS=[["dob","Date of birth",'type="date"'],["nat","Nation",'maxlength="3" autocapitalize="characters" placeholder="CRO"'],["qid","QID",'inputmode="numeric"'],["ice","ICE person",'placeholder="Emergency contact name"'],["icePhone","ICE phone",'type="tel" placeholder="+974…"'],["email","Email",'type="email" placeholder="name@example.com"'],["phone","Phone",'type="tel" placeholder="+974…"']];
 const FK=FIELDS.map(f=>f[0]);
@@ -376,8 +376,8 @@ const bibStyle=p=>bibCss(p.team?"team":"solo",(cfg.colors||{})[p.team?"team":"so
 const qidMark=c=>c.s==="ok"?`<span class="qv ok" title="${esc(c.t)}" aria-label="${esc(c.t)}">✓</span>`:c.s==="bad"?`<span class="qv bad" title="${esc(c.t)}" aria-label="${esc(c.t)}">!</span>`:"";
 const fieldsHtml=(pre,p)=>FIELDS.map(([k,l,a])=>`<label>${l}<input id="${pre}${k}" ${a} value="${esc(p[k]||"")}"></label>`).join("");
 const ISO2={CRO:"HR",BIH:"BA",SLO:"SI",SRB:"RS",MNE:"ME",ITA:"IT",AUT:"AT",QAT:"QA",GER:"DE",HUN:"HU",GBR:"GB",USA:"US",FRA:"FR",ESP:"ES",NED:"NL",SUI:"CH",POL:"PL",CZE:"CZ",SVK:"SK"};
-const MAP_DEF={sigUrl:"Signature",sigTime:"SignatureTime",scope:"PickupScope",by:"CollectedBy",forList:"CollectedFor",desk:"CheckinDevice",merch:"PackageIssued",merchTime:"PackageTime",merchDesk:"PackageDevice",qid:"QID",ageGroup:"AgeGroup.Name",qv:"QatariVerified",dob:"DateOfBirth",nat:"Nation",ice:"ICEName",icePhone:"ICEPhone",phone:"Phone",email:"Email"};
-const MAP_LBL={sigUrl:"Signature link",sigTime:"Signature time",scope:"Pickup scope",by:"Collected by",forList:"Collected for",desk:"Bib device",merch:"Package issued",merchTime:"Package time",merchDesk:"Package device",qid:"QID",ageGroup:"Category (read)",qv:"Qatari verified",dob:"Date of birth",nat:"Nation",ice:"ICE person",icePhone:"ICE phone",phone:"Phone",email:"Email"};
+const MAP_DEF={sigUrl:"Signature",sigTime:"SignatureTime",scope:"PickupScope",by:"CollectedBy",forList:"CollectedFor",desk:"CheckinDevice",merch:"PackageIssued",merchTime:"PackageTime",merchDesk:"PackageDevice",qid:"QID",ageGroup:"AgeGroup.Name",qv:"QatariVerified",dob:"DateOfBirth",nat:"Nation",ice:"ICEName",icePhone:"ICEPhone",phone:"Phone",email:"Email",deleted:"CheckinDeleted"};
+const MAP_LBL={sigUrl:"Signature link",sigTime:"Signature time",scope:"Pickup scope",by:"Collected by",forList:"Collected for",desk:"Bib device",merch:"Package issued",merchTime:"Package time",merchDesk:"Package device",qid:"QID",ageGroup:"Category (read)",qv:"Qatari verified",dob:"Date of birth",nat:"Nation",ice:"ICE person",icePhone:"ICE phone",phone:"Phone",email:"Email",deleted:"Deleted mark"};
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const $=id=>document.getElementById(id);
 const fmt=t=>t?new Date(t).toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"}):"";

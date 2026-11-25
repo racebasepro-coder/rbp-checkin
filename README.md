@@ -53,7 +53,7 @@ iPadi učitaju novu verziju sami unutar minute, ali tek kad nemaju otvorenog nat
 
 ## Što ide u RR14
 Nazivi polja se mijenjaju u Settings → RR14 field names. Zadano:
-Signature (link), SignatureTime, PickupScope (SOLO/SELF/TEAM), CollectedBy (name of who picked up), CollectedFor, CheckinDevice,
+Signature (link), SignatureTime, PickupScope (SOLO/SELF/TEAM), CollectedBy (name of who picked up), CollectedFor, CheckinDevice, CheckinDeleted ("Deleted <time>" after a removed check-in),
 QatariVerified, PackageIssued, PackageTime, PackageDevice, te izmjene DateOfBirth, Nation, QID,
 ICEName, ICEPhone, Email, Phone. Upisi idu jednim batch pozivom (RR limit 1 poziv/s).
 Ako upis ne prođe, ostaje u redu i pokušava se ponovno; stanje se vidi u Settings.

@@ -11,7 +11,7 @@ const WRITE_DEFAULT: Record<string, string> = {
   sigUrl: "Signature", sigTime: "SignatureTime", scope: "PickupScope", by: "CollectedBy",
   forList: "CollectedFor", desk: "CheckinDevice", merch: "PackageIssued", merchTime: "PackageTime",
   merchDesk: "PackageDevice", qid: "QID", qv: "QatariVerified", dob: "DateOfBirth", nat: "Nation",
-  ice: "ICEName", icePhone: "ICEPhone", phone: "Phone", email: "Email",
+  ice: "ICEName", icePhone: "ICEPhone", phone: "Phone", email: "Email", deleted: "CheckinDeleted",
 };
 // Our column <- RR14 list column. The first name found in the list wins; Settings can override (readMap).
 const READ_ALIASES: Record<string, string[]> = {
