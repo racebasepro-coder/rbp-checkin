@@ -38,7 +38,10 @@ button.ghost.danger{color:var(--red);border-color:var(--red)}
 #camMsg{position:absolute;left:0;right:0;bottom:8vh;text-align:center;color:#fff;font-size:20px;margin:0}
 #camOv .camX{position:absolute;top:24px;right:24px;width:64px;height:64px;border-radius:50%;font-size:28px;background:#fff;color:#111;border:0}
 .sb[hidden],button[hidden]{display:none!important}
-#fsExit{position:fixed;right:18px;bottom:18px;z-index:70;display:flex;align-items:center;gap:8px;min-height:52px;padding:0 18px;border-radius:26px;border:0;background:var(--ink);color:var(--bg);font-weight:700;font-size:16px;box-shadow:0 6px 20px rgba(0,0,0,.3);opacity:.92}
+#fsExit{position:fixed;right:226px;bottom:60px;z-index:70;display:flex;align-items:center;gap:8px;min-height:52px;padding:0 18px;border-radius:26px;border:0;background:var(--ink);color:var(--bg);font-weight:700;font-size:16px;box-shadow:0 6px 20px rgba(0,0,0,.3);opacity:.92}
+#scanFab{position:fixed;right:226px;bottom:60px;z-index:15;display:flex;align-items:center;gap:10px;min-height:64px;padding:0 24px;border-radius:32px;border:0;background:var(--red);color:#fff;font-weight:700;font-size:19px;box-shadow:0 8px 24px rgba(0,0,0,.35)}
+body.fs #scanFab{bottom:128px}main{padding-bottom:150px!important}body.mini #scanFab,body.mini #fsExit{right:90px}
+#shirtList .sg{justify-items:center}#shirtList .sz{font-size:56px}#shirtList .sz i{font-size:30px}#shirtList .sx{font-size:16px}
 #doneOv{position:fixed;inset:0;z-index:60;display:none;place-items:center;background:rgba(0,0,0,.35)}#doneOv.on{display:grid}
 #doneOv .box{background:var(--ok);color:#fff;border-radius:22px;padding:34px 48px;text-align:center;max-width:min(560px,90vw);box-shadow:0 20px 60px rgba(0,0,0,.3);position:relative;overflow:hidden}
 #doneOv .tick{font-size:64px;line-height:1}#doneOv h2{margin:10px 0 6px;font-size:30px}#doneOv p{margin:0;font-size:19px;opacity:.95}
@@ -311,6 +314,16 @@ body.settings #gear{background:var(--red);color:#fff}
   </div>
 </div>
 <button type="button" id="fsExit" hidden><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 4v5H4M15 4v5h5M20 15h-5v5M4 15h5v5"/></svg>Exit full screen</button>
+<div class="ov" id="shirtOv" role="dialog" aria-modal="true" aria-labelledby="shirtH">
+  <div class="sheet" style="width:min(640px,100%);text-align:center">
+    <h2 id="shirtH">Hand over the shirts</h2>
+    <p class="sub" id="shirtSub"></p>
+    <div id="shirtList" style="display:flex;flex-wrap:wrap;justify-content:center;align-items:flex-start;gap:18px 48px;margin:16px 0"></div>
+    <p class="note warn" id="shirtWarn" hidden>Saved the pickup, but could not mark the shirts as issued. Mark them on the package desk.</p>
+    <div class="acts" style="justify-content:center"><button type="button" class="pri" id="shirtDone" style="min-width:220px">Done, next participant</button></div>
+  </div>
+</div>
+<button type="button" id="scanFab" title="Scan QR"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 7V3h4M17 3h4v4M21 17v4h-4M7 21H3v-4"/><rect x="8" y="8" width="8" height="8"/></svg>Scan QR</button>
 <div class="ov" id="fsOv" role="dialog" aria-modal="true" aria-labelledby="fsH">
   <div class="sheet" style="width:min(520px,100%)">
     <h2 id="fsH">Full screen on iPad</h2>
@@ -370,6 +383,8 @@ body.settings #gear{background:var(--red);color:#fff}
     <h4>Signatures</h4>
     <p class="sub" style="margin:0 0 8px">Saved as PNG in Supabase Storage (private). RR14 gets a link that opens the signature.</p>
     <div id="syncBox"><p class="sub">Checking…</p></div>
+    <h4>Desks</h4>
+    <div class="form"><label class="wide"><span><input type="checkbox" name="oneDesk" style="width:22px;height:22px;vertical-align:middle"> Bib and shirts at one desk: after the signature the shirts to hand over pop up, and there is no separate package desk step</span></label></div>
     <h4>Shirt stock</h4>
     <p class="sub" style="margin:0 0 8px">Pieces on hand at the start, used in statistics.</p>
     <div class="scroll"><table class="stock"><thead><tr id="stockHead"><th></th></tr></thead><tbody id="stockBody"></tbody></table></div>
@@ -398,7 +413,7 @@ body.settings #gear{background:var(--red);color:#fff}
 "use strict";
 {
 let syncState=null,EV=null;
-const APP_VERSION="1.4.6";
+const APP_VERSION="1.4.7";
 const SIZES=["XS","S","M","L","XL","XXL"];
 const FIELDS=[["dob","Date of birth",'type="date"'],["nat","Nation",'autocapitalize="characters" placeholder="e.g. QATAR"'],["qid","QID",'inputmode="numeric"'],["ice","ICE person",'placeholder="Emergency contact name"'],["icePhone","ICE phone",'type="tel" placeholder="+974…"'],["email","Email",'type="email" placeholder="name@example.com"'],["phone","Phone",'type="tel" placeholder="+974…"']];
 const FK=FIELDS.map(f=>f[0]);
@@ -522,7 +537,7 @@ function setMini(on){document.body.classList.toggle("mini",on);$("collapse").set
 const standalone=()=>navigator.standalone===true||!!(window.matchMedia&&matchMedia("(display-mode: standalone),(display-mode: fullscreen)").matches);
 const fsEl=()=>document.fullscreenElement||document.webkitFullscreenElement;
 const fsCan=!!(document.documentElement.requestFullscreen||document.documentElement.webkitRequestFullscreen);
-function fsLabel(){const on=!!fsEl();$("fsLbl").textContent=on?"Exit full screen":"Full screen";$("fsBtn").title=on?"Exit full screen":"Full screen";$("fsBtn").hidden=standalone()&&!on;$("fsExit").hidden=!on}
+function fsLabel(){const on=!!fsEl();document.body.classList.toggle("fs",on);$("fsLbl").textContent=on?"Exit full screen":"Full screen";$("fsBtn").title=on?"Exit full screen":"Full screen";$("fsBtn").hidden=standalone()&&!on;$("fsExit").hidden=!on}
 async function fsEnter(){const d=document.documentElement;try{if(d.requestFullscreen)await d.requestFullscreen({navigationUI:"hide"});else if(d.webkitRequestFullscreen)d.webkitRequestFullscreen();return true}catch(e){return false}}
 function fsExit(){if(document.exitFullscreen)document.exitFullscreen().catch(()=>{});else if(document.webkitExitFullscreen)document.webkitExitFullscreen()}
 $("fsBtn").onclick=()=>{if(fsEl()){fsExit();return}$("fsNow").hidden=!fsCan;$("fsNote").textContent=fsCan?"Full screen now works until Safari leaves it (it may ask again after a reload).":"This Safari cannot go full screen from a page: use Add to Home Screen.";$("fsOv").classList.add("on")};
@@ -737,9 +752,19 @@ async function doConfirm(cv){
     const now=new Date().toISOString();covered.forEach(b=>Object.assign(byBib(b),{sigId,sigTime:now,by:p.bib,scope:sc,desk:device||"unknown",qv:qv[b]}));
     lastRR=`<div class="note">${esc(fullName(p))} collected ${covered.length>1?covered.length+" bibs ("+covered.map(b=>"#"+b).join(", ")+")":"the bib"}. Sent to the package desk and to RR14.</div>`;
     sel=null;ss.set("ck_draft",null);$("q").value="";render();
-    flashDone(`${fullName(p)} · ${covered.length>1?covered.length+" bibs: "+covered.map(b=>"#"+b).join(", "):"bib #"+p.bib}`);
+    if(cfg.oneDesk){let iss=true;try{await RR.issue(sigId,true)}catch(e){iss=false}
+      if(iss)covered.forEach(b=>Object.assign(byBib(b),{merch:true,merchTime:now,merchDesk:device||"unknown"}));
+      showShirts(p,covered.map(byBib),iss)}
+    else flashDone(`${fullName(p)} · ${covered.length>1?covered.length+" bibs: "+covered.map(b=>"#"+b).join(", "):"bib #"+p.bib}`);
   }catch(e){btn.disabled=false;btn.textContent="Confirm pickup";$("detail").insertAdjacentHTML("beforeend",`<div class="note warn">Could not save: ${esc(e&&e.message||e)}. Try again.</div>`)}
 }
+/* One-desk events: after the signature, show the shirts to hand over (by size, men and women apart). */
+function showShirts(p,ms,issued){
+  $("shirtH").textContent=ms.length>1?`Hand over ${ms.length} shirts`:"Hand over the shirt";
+  $("shirtSub").textContent=`${fullName(p)} · ${ms.length>1?ms.map(m=>"#"+m.bib).join(", "):"bib #"+p.bib}${p.team?" · "+p.team:""}`;
+  $("shirtList").innerHTML=shirtSum(ms)||'<p class="sub">No shirt sizes in RR14.</p>';$("shirtWarn").hidden=!!issued;$("shirtOv").classList.add("on");setTimeout(()=>$("shirtDone").focus(),50)}
+$("shirtDone").onclick=()=>{$("shirtOv").classList.remove("on");$("q").focus()};
+$("scanFab").onclick=()=>$("scanBtn").click();
 /* X on the bib card: drop this participant (and any unsigned drawing), back to search. */
 function closeCard(){sel=null;lastRR="";picked=new Set();ss.set("ck_draft",null);$("q").value="";render();$("q").focus()}
 /* Big confirmation for 3 seconds after a pickup, then back to search (tap closes it sooner). */
@@ -798,6 +823,7 @@ function renderMerch(){
   const G=groups(),now=Date.now();
   const L=G.filter(g=>!g.done).sort((a,b)=>((pend[a.id]?1:0)-(pend[b.id]?1:0))||(pend[a.id]&&pend[b.id]?pend[a.id]-pend[b.id]:0)||String(a.time).localeCompare(b.time));
   $("mcount").textContent=L.length?`${L.length} waiting · oldest first`:"";
+  if(cfg.oneDesk)$("mcount").textContent="This event hands out shirts at the bib desk, right after the signature."+(L.length?` ${L.length} older pickups still waiting here.`:"");
   $("desk").innerHTML=L.length?L.map(g=>{const c=g.by,n=g.ms.length,mine=g.ms.some(m=>m.bib===c.bib),pd=pend[g.id];
     const what=!c.team?"Solo":`${esc(c.team)} · ${n===1&&mine?"own only":`for ${n}${mine?"":" (not self)"}`}`;
     const style=c.team?bibStyle(c):"";
@@ -827,7 +853,7 @@ function renderStats(){
   $("recent").innerHTML=ev.length?`<table class="stack"><thead><tr><th>Time</th><th>What</th><th>Device</th></tr></thead><tbody>${ev.slice(0,12).map(([t,s,d])=>`<tr><td class="n">${fmt(t)}</td><td>${esc(s)}</td><td>${esc(d||"")}</td></tr>`).join("")}</tbody></table>`:'<p class="empty">No activity yet.</p>';
 }
 
-function render(){$("slogan").textContent=cfg.slogan||"Made with Passion. Driven by Data.";const v=location.hash.slice(1);if(v==="merch")renderMerch();else if(v==="stats")renderStats();else{renderList();if(!$("cv")||!sel)renderDetail()}}
+function render(){$("slogan").textContent=cfg.slogan||"Made with Passion. Driven by Data.";const v=location.hash.slice(1);$("scanFab").hidden=v==="merch"||v==="stats";if(v==="merch")renderMerch();else if(v==="stats")renderStats();else{renderList();if(!$("cv")||!sel)renderDetail()}}
 
 /* ---- events ---- */
 $("q").oninput=()=>{renderList();const v=$("q").value.trim();if(/^\d+$/.test(v)&&byBib(+v)&&String(byBib(+v).bib)===v&&!P.some(p=>String(p.bib).startsWith(v)&&p.bib!==+v))select(+v)};
