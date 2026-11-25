@@ -25,6 +25,12 @@ button.pri{background:var(--red);border-color:var(--red);color:#fff}
 button:disabled{opacity:.4;cursor:not-allowed}
 button.ghost{border-color:var(--line)}
 button.ghost.danger{color:var(--red);border-color:var(--red)}
+#doneOv{position:fixed;inset:0;z-index:60;display:none;place-items:center;background:rgba(0,0,0,.35)}#doneOv.on{display:grid}
+#doneOv .box{background:var(--ok);color:#fff;border-radius:22px;padding:34px 48px;text-align:center;max-width:min(560px,90vw);box-shadow:0 20px 60px rgba(0,0,0,.3);position:relative;overflow:hidden}
+#doneOv .tick{font-size:64px;line-height:1}#doneOv h2{margin:10px 0 6px;font-size:30px}#doneOv p{margin:0;font-size:19px;opacity:.95}
+#doneOv .bar{position:absolute;left:0;bottom:0;height:6px;background:rgba(255,255,255,.7);width:100%;transform-origin:left;animation:doneBar 3s linear forwards}
+@keyframes doneBar{to{transform:scaleX(0)}}
+@media(prefers-reduced-motion:reduce){#doneOv .bar{animation:none}}
 body{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-rows:minmax(0,1fr) auto;min-height:100vh;min-height:100dvh}
 aside{grid-row:1/3;grid-column:2}main{grid-column:1;grid-row:1}
 main{padding-bottom:24px}
@@ -347,6 +353,7 @@ body.settings #gear{background:var(--red);color:#fff}
   </form>
 </div>
 
+<div id="doneOv" role="status" aria-live="polite"><div class="box"><div class="tick" aria-hidden="true">✓</div><h2>Check-in saved</h2><p id="doneTxt"></p><i class="bar"></i></div></div>
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="config.js"></script>
@@ -354,7 +361,7 @@ body.settings #gear{background:var(--red);color:#fff}
 "use strict";
 {
 let syncState=null,EV=null;
-const APP_VERSION="1.3.4";
+const APP_VERSION="1.3.5";
 const SIZES=["XS","S","M","L","XL","XXL"];
 const FIELDS=[["dob","Date of birth",'type="date"'],["nat","Nation",'maxlength="3" autocapitalize="characters" placeholder="CRO"'],["qid","QID",'inputmode="numeric"'],["ice","ICE person",'placeholder="Emergency contact name"'],["icePhone","ICE phone",'type="tel" placeholder="+974…"'],["email","Email",'type="email" placeholder="name@example.com"'],["phone","Phone",'type="tel" placeholder="+974…"']];
 const FK=FIELDS.map(f=>f[0]);
@@ -425,7 +432,7 @@ function askEvent(){showEvents();$("evOv").classList.add("on")}
 $("evPick").onclick=e=>{const b=e.target.closest("[data-ev]");if(!b)return;if(EV&&b.dataset.ev===EV.id){$("evOv").classList.remove("on");return}
   ls.set("ck_event",b.dataset.ev);ss.set("ck_draft",null);location.reload()};
 $("evName").onclick=()=>{if(sel&&$("cv")&&ink){$("qrmsg").textContent="Finish or clear the open signature first.";return}askEvent()};
-const idle=()=>!(sel&&$("cv"))&&!document.querySelector(".ov.on")&&!document.body.classList.contains("settings");
+const idle=()=>!(sel&&$("cv"))&&!document.querySelector(".ov.on")&&!document.body.classList.contains("settings")&&!$("doneOv").classList.contains("on");
 function reloadWhenIdle(){if(idle())location.reload();else setTimeout(reloadWhenIdle,3000)}
 let rt=0;function soon(){clearTimeout(rt);rt=setTimeout(()=>{if(sel&&$("cv")&&!["merch","stats"].includes(location.hash.slice(1))){renderList();return}render()},120)}
 
@@ -657,9 +664,15 @@ async function doConfirm(cv){
     await RR.collect({p_event:EV.id,p_collector:p.bib,p_bibs:covered,p_sig_id:sigId,p_path:EV.id+"/"+sigId+".png",p_link_base:CONF.supabaseUrl.replace(/\/$/,"")+"/functions/v1/checkin-sig",p_device:device||"unknown",p_scope:sc,p_qv:qv});
     const now=new Date().toISOString();covered.forEach(b=>Object.assign(byBib(b),{sigId,sigTime:now,by:p.bib,scope:sc,desk:device||"unknown",qv:qv[b]}));
     lastRR=`<div class="note">${esc(fullName(p))} collected ${covered.length>1?covered.length+" bibs ("+covered.map(b=>"#"+b).join(", ")+")":"the bib"}. Sent to the package desk and to RR14.</div>`;
-    sel=null;ss.set("ck_draft",null);$("q").value="";$("q").focus();render();
+    sel=null;ss.set("ck_draft",null);$("q").value="";render();
+    flashDone(`${fullName(p)} · ${covered.length>1?covered.length+" bibs: "+covered.map(b=>"#"+b).join(", "):"bib #"+p.bib}`);
   }catch(e){btn.disabled=false;btn.textContent="Confirm pickup";$("detail").insertAdjacentHTML("beforeend",`<div class="note warn">Could not save: ${esc(e&&e.message||e)}. Try again.</div>`)}
 }
+/* Big confirmation for 3 seconds after a pickup, then back to search (tap closes it sooner). */
+let doneT=null;
+function flashDone(t){const o=$("doneOv"),bar=o.querySelector(".bar");$("doneTxt").textContent=t;bar.style.animation="none";void bar.offsetWidth;bar.style.animation="";o.classList.add("on");clearTimeout(doneT);doneT=setTimeout(hideFlash,3000)}
+function hideFlash(){clearTimeout(doneT);$("doneOv").classList.remove("on");$("q").focus()}
+$("doneOv").onclick=hideFlash;
 /* RBP admin removes a wrong check-in, also after the package was issued: needs the admin PIN, asks twice. */
 let rmPend=null;
 function adminRemove(sigId,bib,btn){
