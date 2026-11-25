@@ -278,14 +278,14 @@ body.settings #gear{background:var(--red);color:#fff}
 
 <div class="ov" id="authOv" role="dialog" aria-modal="true" aria-labelledby="authH">
   <form class="sheet" id="authForm" style="width:min(440px,100%)">
-    <h2 id="authH">Sign in</h2>
-    <p class="sub">Enter the staff PIN or password. The iPad stays signed in.</p>
+    <h2 id="authH">Set up this iPad</h2>
+    <p class="sub">Enter the staff PIN once. This iPad remembers it, so next time you only pick the event and the tablet.</p>
     <div class="form">
       <input name="email" type="hidden" autocomplete="username">
       <label class="wide">PIN or password<input name="password" type="password" autocomplete="current-password" style="font-size:24px;letter-spacing:.2em"></label>
     </div>
     <p class="small" id="authMsg" style="color:var(--red);min-height:1.5em"></p>
-    <div class="acts"><button class="pri" type="submit" id="authBtn">Sign in</button></div>
+    <div class="acts"><button class="pri" type="submit" id="authBtn">Continue</button></div>
   </form>
 </div>
 
@@ -353,7 +353,7 @@ body.settings #gear{background:var(--red);color:#fff}
 "use strict";
 {
 let syncState=null,EV=null;
-const APP_VERSION="1.3";
+const APP_VERSION="1.3.1";
 const SIZES=["XS","S","M","L","XL","XXL"];
 const FIELDS=[["dob","Date of birth",'type="date"'],["nat","Nation",'maxlength="3" autocapitalize="characters" placeholder="CRO"'],["qid","QID",'inputmode="numeric"'],["ice","ICE person",'placeholder="Emergency contact name"'],["icePhone","ICE phone",'type="tel" placeholder="+974…"'],["email","Email",'type="email" placeholder="name@example.com"'],["phone","Phone",'type="tel" placeholder="+974…"']];
 const FK=FIELDS.map(f=>f[0]);
