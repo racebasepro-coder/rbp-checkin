@@ -23,6 +23,7 @@
 :root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
 *{box-sizing:border-box;min-width:0}
 html{-webkit-tap-highlight-color:transparent;-webkit-text-size-adjust:100%}
+html,body{overscroll-behavior:none}
 button,label,a,input{touch-action:manipulation}
 body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.5 Barlow,system-ui,sans-serif;overflow-x:clip}
 button,input,select{font:inherit;color:inherit}
@@ -413,7 +414,7 @@ body.settings #gear{background:var(--red);color:#fff}
 "use strict";
 {
 let syncState=null,EV=null;
-const APP_VERSION="1.4.7";
+const APP_VERSION="1.4.8";
 const SIZES=["XS","S","M","L","XL","XXL"];
 const FIELDS=[["dob","Date of birth",'type="date"'],["nat","Nation",'autocapitalize="characters" placeholder="e.g. QATAR"'],["qid","QID",'inputmode="numeric"'],["ice","ICE person",'placeholder="Emergency contact name"'],["icePhone","ICE phone",'type="tel" placeholder="+974…"'],["email","Email",'type="email" placeholder="name@example.com"'],["phone","Phone",'type="tel" placeholder="+974…"']];
 const FK=FIELDS.map(f=>f[0]);
@@ -452,6 +453,7 @@ const fmt=t=>t?new Date(t).toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-
 const fdate=d=>{const m=/^(\d{4})-(\d{2})-(\d{2})/.exec(d||"");return m?`${m[3]}.${m[2]}.${m[1]}`:"not set"};
 const norm=s=>String(s).toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/đ/g,"d");
 const ls={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}}};
+const ss={get(k){try{return sessionStorage.getItem(k)}catch(e){return null}},set(k,v){try{v==null?sessionStorage.removeItem(k):sessionStorage.setItem(k,v)}catch(e){}}};
 let P=[],sel=null,picked=new Set(),showDone=false,lastRR="",cfg={map:{...MAP_DEF}},device=ls.get("ck_device")||"";
 const byBib=b=>P.find(p=>p.bib===b);
 const fullName=p=>p.first+" "+p.last;
@@ -538,13 +540,19 @@ const standalone=()=>navigator.standalone===true||!!(window.matchMedia&&matchMed
 const fsEl=()=>document.fullscreenElement||document.webkitFullscreenElement;
 const fsCan=!!(document.documentElement.requestFullscreen||document.documentElement.webkitRequestFullscreen);
 function fsLabel(){const on=!!fsEl();document.body.classList.toggle("fs",on);$("fsLbl").textContent=on?"Exit full screen":"Full screen";$("fsBtn").title=on?"Exit full screen":"Full screen";$("fsBtn").hidden=standalone()&&!on;$("fsExit").hidden=!on}
-async function fsEnter(){const d=document.documentElement;try{if(d.requestFullscreen)await d.requestFullscreen({navigationUI:"hide"});else if(d.webkitRequestFullscreen)d.webkitRequestFullscreen();return true}catch(e){return false}}
-function fsExit(){if(document.exitFullscreen)document.exitFullscreen().catch(()=>{});else if(document.webkitExitFullscreen)document.webkitExitFullscreen()}
+async function fsEnter(){const d=document.documentElement;ss.set("ck_fs","1");try{if(d.requestFullscreen)await d.requestFullscreen({navigationUI:"hide"});else if(d.webkitRequestFullscreen)d.webkitRequestFullscreen();return true}catch(e){return false}}
+function fsExit(){ss.set("ck_fs",null);if(document.exitFullscreen)document.exitFullscreen().catch(()=>{});else if(document.webkitExitFullscreen)document.webkitExitFullscreen()}
 $("fsBtn").onclick=()=>{if(fsEl()){fsExit();return}$("fsNow").hidden=!fsCan;$("fsNote").textContent=fsCan?"Full screen now works until Safari leaves it (it may ask again after a reload).":"This Safari cannot go full screen from a page: use Add to Home Screen.";$("fsOv").classList.add("on")};
 $("fsExit").onclick=fsExit;
 $("fsClose").onclick=()=>$("fsOv").classList.remove("on");
 $("fsNow").onclick=async()=>{$("fsOv").classList.remove("on");if(!(await fsEnter())){$("fsNote").textContent="Safari refused full screen here: use Add to Home Screen.";$("fsNow").hidden=true;$("fsOv").classList.add("on")}};
-document.addEventListener("fullscreenchange",fsLabel);document.addEventListener("webkitfullscreenchange",fsLabel);fsLabel();
+/* Safari leaves full screen on a swipe down and a page cannot block that gesture. So full screen is "sticky":
+   until Exit full screen is tapped, the next tap anywhere goes straight back to full screen (also after a reload). */
+function fsSticky(){if(fsEl()||ss.get("ck_fs")!=="1"||!fsCan)return;
+  const back=()=>{document.removeEventListener("pointerdown",back,true);if(!fsEl()&&ss.get("ck_fs")==="1")fsEnter()};
+  document.addEventListener("pointerdown",back,true)}
+const fsChange=()=>{fsLabel();fsSticky()};
+document.addEventListener("fullscreenchange",fsChange);document.addEventListener("webkitfullscreenchange",fsChange);fsLabel();fsSticky();
 $("collapse").onclick=()=>{setMini(!document.body.classList.contains("mini"))};
 setMini(ls.get("ck_mini")==="1"||(ls.get("ck_mini")==null&&innerWidth<900));
 
@@ -709,7 +717,6 @@ function renderDetail(){
 }
 let ink=false;
 /* ---- in-progress session survives a reload (e.g. an app update) on this iPad ---- */
-const ss={get(k){try{return sessionStorage.getItem(k)}catch(e){return null}},set(k,v){try{v==null?sessionStorage.removeItem(k):sessionStorage.setItem(k,v)}catch(e){}}};
 function saveDraft(){if(!sel||!$("cv")){ss.set("ck_draft",null);return}const mw=$("mates"),f=id=>$(id)?$(id).value:undefined;
   ss.set("ck_draft",JSON.stringify({sel,picked:[...picked],team:!!(mw&&!mw.hidden),sig:ink?$("cv").toDataURL("image/png"):null}))}
 function restoreDraft(){let d;try{d=JSON.parse(ss.get("ck_draft"))}catch(e){}if(!d||!d.sel)return;const p=byBib(d.sel);if(!p){ss.set("ck_draft",null);return}
