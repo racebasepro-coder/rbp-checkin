@@ -242,7 +242,7 @@ body.settings #gear{background:var(--red);color:#fff}
       <div>
         <div class="sbar">
           <input class="search" id="q" type="search" placeholder="Name, bib or team" autocomplete="off" aria-label="Search participants">
-          <button type="button" class="btn" id="scanBtn" title="Scan the participant's QR code with the back camera"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7V3h4M17 3h4v4M21 17v4h-4M7 21H3v-4"/><rect x="8" y="8" width="8" height="8"/></svg>Scan QR</button><input type="file" id="qr" accept="image/*" capture="environment" hidden>
+          <button type="button" class="btn" id="scanBtn" title="Scan the participant's QR code or barcode with the back camera"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7V3h4M17 3h4v4M21 17v4h-4M7 21H3v-4"/><rect x="8" y="8" width="8" height="8"/></svg>Scan QR / barcode</button><input type="file" id="qr" accept="image/*" capture="environment" hidden>
         </div>
         <p class="small" id="qrmsg">A USB or Bluetooth barcode scanner also works: it types into the search box.</p>
         <ul class="list" id="res" role="listbox" aria-label="Participants"></ul>
@@ -281,7 +281,7 @@ body.settings #gear{background:var(--red);color:#fff}
 </main>
 <footer class="brandbar" id="brandbar"><span class="slogan" id="slogan">Made with Passion. Driven by Data.</span><img class="rbp" src="logo.png" alt="RaceBasePro" width="120" height="28"><span class="ver" id="ver"></span></footer>
 
-<div id="camOv" role="dialog" aria-modal="true" aria-label="Scan QR code"><video id="camV" playsinline muted autoplay></video><div class="camFrame" aria-hidden="true"></div><p id="camMsg">Hold the QR code inside the frame</p><button type="button" id="camX" class="camX" aria-label="Close camera">✕</button></div>
+<div id="camOv" role="dialog" aria-modal="true" aria-label="Scan QR code or barcode"><video id="camV" playsinline muted autoplay></video><div class="camFrame" aria-hidden="true"></div><p id="camMsg">Hold the QR code inside the frame</p><button type="button" id="camX" class="camX" aria-label="Close camera">✕</button></div>
 <div class="ov" id="evOv" role="dialog" aria-modal="true" aria-labelledby="evH">
   <div class="sheet">
     <h2 id="evH">Which event?</h2>
@@ -341,7 +341,7 @@ body.settings #gear{background:var(--red);color:#fff}
     <div class="acts" style="justify-content:center"><button type="button" class="pri" id="shirtDone" style="min-width:220px">Done, next participant</button></div>
   </div>
 </div>
-<button type="button" id="scanFab" title="Scan QR"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 7V3h4M17 3h4v4M21 17v4h-4M7 21H3v-4"/><rect x="8" y="8" width="8" height="8"/></svg>Scan QR</button>
+<button type="button" id="scanFab" title="Scan QR or barcode"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 7V3h4M17 3h4v4M21 17v4h-4M7 21H3v-4"/><rect x="8" y="8" width="8" height="8"/></svg>Scan QR</button>
 <div class="ov" id="qidOv" role="dialog" aria-modal="true" aria-labelledby="qidH">
   <div class="sheet" style="width:min(720px,100%)">
     <h2 id="qidH">QID photos</h2>
@@ -451,7 +451,7 @@ body.settings #gear{background:var(--red);color:#fff}
 "use strict";
 {
 let syncState=null,EV=null;
-const APP_VERSION="1.7.2";
+const APP_VERSION="1.7.3";
 const SIZES=["XS","S","M","L","XL","XXL"];
 const FIELDS=[["dob","Date of birth",'type="date"'],["nat","Nation",'autocapitalize="characters" placeholder="e.g. QATAR"'],["qid","QID",'inputmode="numeric"'],["ice","ICE person",'placeholder="Emergency contact name"'],["icePhone","ICE phone",'type="tel" placeholder="+974…"'],["email","Email",'type="email" placeholder="name@example.com"'],["phone","Phone",'type="tel" placeholder="+974…"']];
 const FK=FIELDS.map(f=>f[0]);
@@ -816,7 +816,11 @@ $("shirtDone").onclick=()=>{$("shirtOv").classList.remove("on");$("q").focus()};
 $("scanFab").onclick=()=>$("scanBtn").click();
 /* ---- Change tab: a bib gets another person (typed, or read from the QID) ---- */
 let chBib=null;
-const CHF=[["first","First name",""],["last","Last name",""],["sex","Gender","sel"],["nat","Nation",'autocapitalize="characters"'],["dob","Date of birth",'type="date"'],["qid","QID",'inputmode="numeric" maxlength="11"'],["email","Email",'type="email"'],["phone","Phone",'inputmode="tel"'],["ice","ICE person",""],["icePhone","ICE phone",'inputmode="tel"'],["size","T-shirt","size"]];
+/* Nation list for the Change tab: every country once, written the way this event's data already writes it. */
+function natOpts(){const by={};P.forEach(p=>{const i=natIso(p.nat);if(i&&!by[i])by[i]=p.nat.toUpperCase()});Object.keys(IOC).forEach(i=>{if(!by[i])by[i]=natName(i)});
+  return Object.entries(by).map(([i,n])=>({i,n})).sort((a,b)=>a.n.localeCompare(b.n))}
+function setNat(sel,v){const i=natIso(v),o=[...sel.options].find(o=>o.value===String(v).toUpperCase())||(i&&[...sel.options].find(o=>o.dataset.i===i));if(o){sel.value=o.value;return true}return false}
+const CHF=[["first","First name",""],["last","Last name",""],["sex","Gender","sel"],["nat","Nation","nat"],["dob","Date of birth",'type="date"'],["qid","QID",'inputmode="numeric" maxlength="11"'],["email","Email",'type="email"'],["phone","Phone",'inputmode="tel"'],["ice","ICE person",""],["icePhone","ICE phone",'inputmode="tel"'],["size","T-shirt","size"]];
 function chFind(t){t=t.trim().toLowerCase();if(!t)return[];return P.filter(p=>String(p.bib).startsWith(t)||fullName(p).toLowerCase().includes(t)||(p.team||"").toLowerCase().includes(t)).sort((x,y)=>x.bib-y.bib).slice(0,6)}
 function chList(){const q=$("chQ"),cur=chBib&&byBib(chBib),rows=q.value.trim()?chFind(q.value):cur?[cur]:[];
   $("chL").innerHTML=rows.map(p=>`<li><button type="button" data-ch="${p.bib}" ${chBib===p.bib?'style="border-color:var(--red);border-width:3px"':""}><span class="bb" style="${bibStyle(p)}">${p.bib}</span><span class="flag">${flag(p.nat)}</span><span>${esc(fullName(p))}<br><span class="sub">${p.team?esc(p.team):"Solo"}</span></span></button></li>`).join("")||(q.value.trim()?'<li class="sub">No match.</li>':"")}
@@ -825,6 +829,7 @@ function renderSwap(){chList();const p=chBib&&byBib(chBib),box=$("chForm");if(!p
   if(box.dataset.bib===String(p.bib)&&$("chF"))return;box.dataset.bib=String(p.bib);
   box.hidden=false;const val=k=>({first:p.first,last:p.last,sex:p.sex,nat:p.nat,dob:p.dob,qid:p.qid,email:p.email,phone:p.phone,ice:p.ice,icePhone:p.icePhone,size:p.size})[k]||"";
   const inp=([k,l,a])=>a==="sel"?`<label>${l}<select name="${k}"><option value="M" ${val(k)==="M"?"selected":""}>Men</option><option value="W" ${val(k)==="W"?"selected":""}>Women</option></select></label>`
+    :a==="nat"?`<label>${l}<select name="${k}"><option value="">–</option>${(()=>{const L=natOpts(),cur=String(val(k)).toUpperCase(),ci=natIso(cur);if(cur&&!L.some(o=>o.n===cur||o.i===ci))L.unshift({i:"",n:cur});return L.map(o=>`<option value="${esc(o.n)}" data-i="${o.i}" ${o.n===cur||(!L.some(x=>x.n===cur)&&ci&&o.i===ci)?"selected":""}>${o.i?flag(o.n)+" ":""}${esc(o.n)}</option>`).join("")})()}</select></label>`
     :a==="size"?`<label>${l}<select name="${k}">${[...new Set([...SIZES,val(k)].filter(Boolean))].map(z=>`<option ${z===val(k)?"selected":""}>${esc(z)}</option>`).join("")}</select></label>`
     :`<label>${l}<input name="${k}" ${a} value="${esc(val(k))}"></label>`;
   box.innerHTML=`<h3>New person on bib ${p.bib}</h3><p class="sub">Now: <b>${esc(fullName(p))}</b>${p.team?" · "+esc(p.team):""}. Change what is different; fields you leave as they are stay.</p>
@@ -889,7 +894,7 @@ async function qidUpload(bib){if(!qid.f&&!qid.b)return"";const ts=Date.now(),pat
   const{data,error}=await sb.from("checkin_qid_docs").insert({event_id:EV.id,bib,front_path:paths.f||null,back_path:paths.b||null,both_path:paths.both||null,ocr:parseQid(qid.text.f+"\n"+qid.text.b),device:device||"",token:tok}).select("id").single();if(error)throw new Error(error.message);
   return CONF.supabaseUrl.replace(/\/$/,"")+"/functions/v1/checkin-sig?q="+data.id+"&t="+tok}
 $("qidSave").onclick=()=>{const f=$("qidFields"),v=k=>f.querySelector(`[name=${k}]`).value.trim(),F=$("chF");if(!F){$("qidOv").classList.remove("on");return}
-  if(v("qid"))F.elements.qid.value=v("qid");if(v("dob"))F.elements.dob.value=v("dob");if(v("nat"))F.elements.nat.value=v("nat").toUpperCase();
+  if(v("qid"))F.elements.qid.value=v("qid");if(v("dob"))F.elements.dob.value=v("dob");if(v("nat")&&!setNat(F.elements.nat,v("nat"))){$("qidState").textContent="Nation \""+v("nat")+"\" is not in the list. Pick it in the form.";}
   if(v("name")){const w=v("name").split(/\s+/);F.elements.first.value=w[0];F.elements.last.value=w.slice(1).join(" ")}
   $("qidOv").classList.remove("on");chPhotoNote()};
 /* X on the bib card: drop this participant (and any unsigned drawing), back to search. */
@@ -913,30 +918,36 @@ async function undo(sigId){try{await RR.undo(sigId);groupOf(sigId).forEach(m=>Ob
 
 /* ---- QR: live back camera; a photo is the fallback where the camera is not allowed ---- */
 let camStream=null,camLoop=null;
-const det=("BarcodeDetector" in window)?(()=>{try{return new BarcodeDetector({formats:["qr_code"]})}catch(e){return null}})():null;
+const det=("BarcodeDetector" in window)?(()=>{try{return new BarcodeDetector({formats:["qr_code","code_128","code_39","ean_13","ean_8","itf","upc_a","codabar","data_matrix"]})}catch(e){return null}})():null;
+/* Barcodes (Code 128/39, EAN, ITF...) where the iPad has no BarcodeDetector: ZXing, loaded the first time the camera opens. */
+let zx=null,zxLoad=null;
+function loadZX(){if(zx||zxLoad)return zxLoad;zxLoad=new Promise(res=>{const sc=document.createElement("script");sc.src="https://cdn.jsdelivr.net/npm/@zxing/library@0.21.3/umd/index.min.js";
+  sc.onload=()=>{try{const Z=window.ZXing,h=new Map(),F=Z.BarcodeFormat;h.set(Z.DecodeHintType.POSSIBLE_FORMATS,[F.CODE_128,F.CODE_39,F.EAN_13,F.EAN_8,F.ITF,F.UPC_A,F.CODABAR,F.QR_CODE]);h.set(Z.DecodeHintType.TRY_HARDER,true);zx=new Z.MultiFormatReader();zx.setHints(h)}catch(e){}res()};sc.onerror=()=>res();document.head.appendChild(sc)});return zxLoad}
+function zxRead(c){if(!zx)return null;try{const Z=window.ZXing;return zx.decode(new Z.BinaryBitmap(new Z.HybridBinarizer(new Z.HTMLCanvasElementLuminanceSource(c)))).getText()}catch(e){return null}finally{try{zx.reset()}catch(e){}}}
 function gotQR(text){const msg=$("qrmsg"),m=String(text).match(/\d+/g),bib=m&&+m[m.length-1],p=bib&&byBib(bib);
   if(p){msg.textContent=`Scanned bib ${bib}.`;$("q").value=String(bib);renderList();select(bib);return true}
-  msg.textContent="QR read, but no participant matches it.";return false}
+  msg.textContent="Code read ("+String(text).slice(0,30)+"), but no participant matches it.";return false}
 function stopCam(){clearTimeout(camLoop);camLoop=null;if(camStream)camStream.getTracks().forEach(t=>t.stop());camStream=null;$("camV").srcObject=null;$("camOv").classList.remove("on")}
 $("camX").onclick=stopCam;
 $("scanBtn").onclick=async()=>{
   if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){$("qr").click();return}
   try{camStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:"environment"},width:{ideal:1280},height:{ideal:720}},audio:false})}
   catch(e){$("qrmsg").textContent="Camera not allowed. Take a photo of the QR code instead.";$("qr").click();return}
-  const v=$("camV");v.srcObject=camStream;$("camMsg").textContent="Hold the QR code inside the frame";$("camOv").classList.add("on");try{await v.play()}catch(e){}
+  const v=$("camV");v.srcObject=camStream;$("camMsg").textContent="Hold the QR code or barcode inside the frame";if(!det)loadZX();let n=0;$("camOv").classList.add("on");try{await v.play()}catch(e){}
   const c=document.createElement("canvas"),x=c.getContext("2d",{willReadFrequently:true});
   const tick=async()=>{if(!camStream)return;
     try{if(v.readyState>=2){let r=null;
       if(det){const f=await det.detect(v);r=f[0]&&f[0].rawValue}
-      else if(window.jsQR){const s=Math.min(1,800/Math.max(v.videoWidth,v.videoHeight));c.width=v.videoWidth*s;c.height=v.videoHeight*s;x.drawImage(v,0,0,c.width,c.height);const q=jsQR(x.getImageData(0,0,c.width,c.height).data,c.width,c.height);r=q&&q.data}
-      if(r){if(gotQR(r)){stopCam();return}$("camMsg").textContent="QR read, but no participant matches it."}}}catch(e){}
+      else if(window.jsQR){const s=Math.min(1,800/Math.max(v.videoWidth,v.videoHeight));c.width=v.videoWidth*s;c.height=v.videoHeight*s;x.drawImage(v,0,0,c.width,c.height);const q=jsQR(x.getImageData(0,0,c.width,c.height).data,c.width,c.height);r=q&&q.data;if(!r&&zx&&(n++%2===0))r=zxRead(c)}
+      if(r){if(gotQR(r)){stopCam();return}$("camMsg").textContent="Code read, but no participant matches it."}}}catch(e){}
     camLoop=setTimeout(tick,180)};
   tick()};
 $("qr").onchange=async e=>{const f=e.target.files[0];e.target.value="";if(!f)return;const msg=$("qrmsg");msg.textContent="Reading QR code…";
   try{const img=await createImageBitmap(f),s=Math.min(1,1400/Math.max(img.width,img.height)),c=document.createElement("canvas");c.width=img.width*s;c.height=img.height*s;const x=c.getContext("2d");x.drawImage(img,0,0,c.width,c.height);
-    const r=window.jsQR&&jsQR(x.getImageData(0,0,c.width,c.height).data,c.width,c.height);
-    if(!r){msg.textContent="No QR code found. Try again closer, or type the bib.";return}
-    gotQR(r.data);
+    const r=window.jsQR&&jsQR(x.getImageData(0,0,c.width,c.height).data,c.width,c.height);let t=r&&r.data;
+    if(!t){await loadZX();t=zxRead(c)}
+    if(!t){msg.textContent="No QR code or barcode found. Try again closer, or type the bib.";return}
+    gotQR(t);
   }catch(err){msg.textContent="Could not read the photo. Type the bib instead."}};
 
 /* ---- package desk ---- */
@@ -984,6 +995,13 @@ function render(){$("slogan").textContent=cfg.slogan||"Made with Passion. Driven
 
 /* ---- events ---- */
 $("q").oninput=()=>{renderList();const v=$("q").value.trim();if(/^\d+$/.test(v)&&byBib(+v)&&String(byBib(+v).bib)===v&&!P.some(p=>String(p.bib).startsWith(v)&&p.bib!==+v))select(+v)};
+/* USB/Bluetooth barcode scanner: it types the code fast and presses Enter. Caught even when the search box has no focus. */
+let kb="",kbT=0;
+document.addEventListener("keydown",e=>{const t=e.target,inField=t&&(t.tagName==="INPUT"||t.tagName==="TEXTAREA"||t.tagName==="SELECT"||t.isContentEditable);
+  if(inField||e.metaKey||e.ctrlKey||e.altKey||document.querySelector(".ov.on"))return;const v=location.hash.slice(1);if(v&&v!=="checkin")return;
+  const now=Date.now();if(now-kbT>80)kb="";kbT=now;
+  if(e.key==="Enter"){if(kb.length>=1){e.preventDefault();const code=kb;kb="";gotQR(code)}return}
+  if(e.key.length===1){kb+=e.key}});
 $("q").onkeydown=e=>{if(e.key==="Enter"){const v=$("q").value.trim(),m=v.match(/\d+/g),b=m&&+m[m.length-1];if(b&&byBib(b))select(b);else{const f=$("res").querySelector("[data-bib]");if(f)select(+f.dataset.bib)}}};
 $("res").onclick=e=>{const b=e.target.closest("[data-bib]");if(b)select(+b.dataset.bib)};
 $("desk").onclick=e=>{const g=e.target.closest("[data-give]"),u=e.target.closest("[data-undo]");if(g){pend[g.dataset.give]=Date.now()+UNDO;renderMerch()}if(u){delete pend[u.dataset.undo];renderMerch()}};
