@@ -420,7 +420,7 @@ body.settings #gear{background:var(--red);color:#fff}
 "use strict";
 {
 let syncState=null,EV=null;
-const APP_VERSION="1.5.2";
+const APP_VERSION="1.5.3";
 const SIZES=["XS","S","M","L","XL","XXL"];
 const FIELDS=[["dob","Date of birth",'type="date"'],["nat","Nation",'autocapitalize="characters" placeholder="e.g. QATAR"'],["qid","QID",'inputmode="numeric"'],["ice","ICE person",'placeholder="Emergency contact name"'],["icePhone","ICE phone",'type="tel" placeholder="+974…"'],["email","Email",'type="email" placeholder="name@example.com"'],["phone","Phone",'type="tel" placeholder="+974…"']];
 const FK=FIELDS.map(f=>f[0]);
@@ -555,7 +555,8 @@ $("fsNow").onclick=async()=>{$("fsOv").classList.remove("on");if(!(await fsEnter
 /* Safari leaves full screen on a swipe down and a page cannot block that gesture. So full screen is "sticky":
    until Exit full screen is tapped, the next tap anywhere goes straight back to full screen (also after a reload). */
 function fsSticky(){if(fsEl()||ss.get("ck_fs")!=="1"||!fsCan)return;
-  const back=()=>{document.removeEventListener("pointerdown",back,true);if(!fsEl()&&ss.get("ck_fs")==="1")fsEnter()};
+  const back=e=>{if(e&&e.target&&e.target.closest&&e.target.closest("input,textarea,select,label"))return; // the keyboard would throw Safari out again
+    document.removeEventListener("pointerdown",back,true);if(!fsEl()&&ss.get("ck_fs")==="1")fsEnter()};
   document.addEventListener("pointerdown",back,true)}
 const fsChange=()=>{fsLabel();fsSticky()};
 document.addEventListener("fullscreenchange",fsChange);document.addEventListener("webkitfullscreenchange",fsChange);fsLabel();fsSticky();
