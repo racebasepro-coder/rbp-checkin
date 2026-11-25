@@ -81,7 +81,18 @@ Deno.serve(async (req) => {
     const set = (ev?.settings ?? {}) as Record<string, any>;
     if (!inRanges(String(set.freeBibs ?? ""), B)) return json({ error: `Bib ${B} is not in this event's free bib ranges` }, 400);
     const f = { ...fields } as Record<string, unknown>;
-    if (String(set.newContest ?? "").trim()) f.contest = String(set.newContest).trim();
+    // Joining a team: the team must exist and have room (Settings "team size", 6 by default).
+    const team = String(f.team ?? "").trim();
+    if (team) {
+      const max = Number(set.teamSize) || 6;
+      const { count } = await sb.from("checkin_participants").select("bib", { count: "exact", head: true })
+        .eq("event_id", eventId).eq("team", team).is("gone_at", null);
+      if (!count) return json({ error: `No team called ${team}` }, 400);
+      if (count >= max) return json({ error: `Team ${team} already has ${count} members` }, 400);
+      f.team = team;
+    } else delete f.team;
+    const contest = String((team ? set.newTeamContest : set.newContest) ?? "").trim();
+    if (contest) f.contest = contest;
     const { error } = await sb.rpc("checkin_add", { p_event: eventId, p_bib: B, p_fields: f, p_device: String(device ?? "") });
     return error ? json({ error: error.message }, 400) : json({ ok: true });
   }

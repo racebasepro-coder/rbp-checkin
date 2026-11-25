@@ -137,6 +137,7 @@ label.btn input{position:absolute;opacity:0;width:1px;height:1px}
 .choice{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:10px;margin-bottom:6px}
 .choice button{min-height:76px;font:700 22px/1.1 "Barlow Condensed",sans-serif;border-width:2px}
 .choice button[aria-pressed=true]{background:var(--red);border-color:var(--red);color:#fff}
+.swl button[disabled]{opacity:.5}
 #mates{margin-top:8px}
 .mem{display:flex;gap:12px;align-items:center;padding:8px 4px;border-top:1px solid var(--line);min-height:52px}
 .mem input{width:26px;height:26px;accent-color:var(--red);flex:none}
@@ -454,7 +455,7 @@ body.settings #gear{background:var(--red);color:#fff}
     <h4>Desks</h4>
     <div class="form"><label class="wide"><span><input type="checkbox" name="oneDesk" style="width:22px;height:22px;vertical-align:middle"> Bib and shirts at one desk: after the signature the shirts to hand over pop up, and there is no separate package desk step</span></label></div>
     <h4>New participants</h4>
-    <div class="form"><label>Free bibs<input name="freeBibs" placeholder="e.g. 3000-3099, 4005" autocomplete="off"></label><label>RR14 contest ID for them (optional)<input name="newContest" inputmode="numeric" placeholder="e.g. 1" autocomplete="off"></label></div>
+    <div class="form"><label>Free bibs<input name="freeBibs" placeholder="e.g. 3000-3099, 4005" autocomplete="off"></label><label>RR14 contest ID for new solo (optional)<input name="newContest" inputmode="numeric" placeholder="e.g. 1" autocomplete="off"></label><label>RR14 contest ID for new team members (optional)<input name="newTeamContest" inputmode="numeric" placeholder="e.g. 2" autocomplete="off"></label><label>Team size (most members)<input name="teamSize" inputmode="numeric" placeholder="6" autocomplete="off"></label></div>
     <p class="sub" style="margin:0 0 8px">The New tab gives out these bibs. They should be empty bibs in RR14.</p>
     <h4>Shirt stock</h4>
     <div class="form"><label>Shirts<select name="shirtMode" id="shirtMode"><option value="gender">Men and women (separate cuts)</option><option value="unisex">Unisex (sizes only)</option></select></label></div>
@@ -485,7 +486,7 @@ body.settings #gear{background:var(--red);color:#fff}
 "use strict";
 {
 let syncState=null,EV=null;
-const APP_VERSION="1.9.0";
+const APP_VERSION="1.9.1";
 const SIZES=["XS","S","M","L","XL","XXL"];
 const FIELDS=[["dob","Date of birth",'type="date"'],["nat","Nation",'autocapitalize="characters" placeholder="e.g. QATAR"'],["qid","QID",'inputmode="numeric"'],["ice","ICE person",'placeholder="Emergency contact name"'],["icePhone","ICE phone",'type="tel" placeholder="+974…"'],["email","Email",'type="email" placeholder="name@example.com"'],["phone","Phone",'type="tel" placeholder="+974…"']];
 const FK=FIELDS.map(f=>f[0]);
@@ -906,26 +907,40 @@ function renderAdd(){const all=bibRanges(cfg.freeBibs),fr=freeBibs(),box=$("nwBo
   if(!all.length){box.innerHTML='<p class="empty">No free bibs set for this event. Add a range in Settings, under New participants (for example 3000-3099).</p>';return}
   if(!fr.length){box.innerHTML='<p class="empty">All free bibs are given out. Add more in Settings.</p>';return}
   const S=$("nwBib");
-  if(S&&$("nwF")){const cur=+S.value;S.innerHTML=fr.slice(0,800).map(b=>`<option ${b===cur?"selected":""}>${b}</option>`).join("");if(!fr.includes(cur)){$("nwMsg").textContent=`Bib ${cur} was just taken on another iPad. Pick another.`}return}
-  box.innerHTML=`<div class="form"><label>Bib<select id="nwBib" style="font:800 28px/1 'Barlow Condensed',sans-serif;min-height:56px">${fr.slice(0,800).map(b=>`<option>${b}</option>`).join("")}</select></label></div>
+  if(S&&$("nwF")){nwTeams();const cur=+S.value;S.innerHTML=fr.slice(0,800).map(b=>`<option ${b===cur?"selected":""}>${b}</option>`).join("");if(!fr.includes(cur)){$("nwMsg").textContent=`Bib ${cur} was just taken on another iPad. Pick another.`}return}
+  box.innerHTML=`<div class="choice" role="group" aria-label="Solo or team"><button type="button" data-nwt="solo" aria-pressed="${nwType==="solo"}">Solo</button><button type="button" data-nwt="team" aria-pressed="${nwType==="team"}">Team</button></div>
+  <div id="nwTeamBox" ${nwType==="team"?"":"hidden"}><input class="search" id="nwTQ" type="search" placeholder="Find the team" autocomplete="off" style="margin-top:12px"><ul class="swl" id="nwTL"></ul></div>
+  <div class="form" style="margin-top:14px"><label>Bib<select id="nwBib" style="font:800 28px/1 'Barlow Condensed',sans-serif;min-height:56px">${fr.slice(0,800).map(b=>`<option>${b}</option>`).join("")}</select></label></div>
   <div class="acts" style="justify-content:flex-start;margin:10px 0 14px"><button type="button" class="ghost" id="nwScan">Photograph QID (front and back)</button><span class="small" id="nwPhotos"></span></div>
   <form class="form" id="nwF" onsubmit="return false">${chFields(()=>"")}</form>
   <div class="acts"><button type="button" class="ghost" id="nwClear">Clear</button><button type="button" class="pri" id="nwSave">Add participant</button></div>`;
   for(const k of["sex","size"]){const el=$("nwF").elements[k];el.insertAdjacentHTML("afterbegin",'<option value="">–</option>');el.value=""}
+  box.querySelectorAll("[data-nwt]").forEach(b=>b.onclick=()=>{nwType=b.dataset.nwt;if(nwType==="solo")nwTeam="";box.querySelectorAll("[data-nwt]").forEach(x=>x.setAttribute("aria-pressed",String(x===b)));$("nwTeamBox").hidden=nwType!=="team";nwTeams()});
+  $("nwTQ").oninput=nwTeams;$("nwTL").onclick=e=>{const b=e.target.closest("[data-team]");if(!b||b.disabled)return;nwTeam=b.dataset.team;$("nwTQ").value="";nwTeams()};nwTeams();
   $("nwScan").onclick=()=>openQid(+$("nwBib").value,"nwF");$("nwClear").onclick=()=>{qidReset();$("nwBox").innerHTML="";$("nwMsg").textContent="";renderAdd()};$("nwSave").onclick=nwSave}
+let nwType="solo",nwTeam="";
+const teamMax=()=>+cfg.teamSize||6;
+/* Teams of this event with their member count; full teams are shown but cannot be picked. */
+function nwTeams(){const L=$("nwTL");if(!L)return;const by={};P.forEach(p=>{if(p.team&&!p.gone)by[p.team]=(by[p.team]||0)+1});
+  const q=($("nwTQ").value||"").trim().toLowerCase(),mx=teamMax();
+  let T=Object.entries(by).map(([n,c])=>({n,c})).sort((a,b)=>(a.c>=mx)-(b.c>=mx)||a.n.localeCompare(b.n));
+  if(q)T=T.filter(t=>t.n.toLowerCase().includes(q));else if(nwTeam)T=T.filter(t=>t.n===nwTeam);else T=T.filter(t=>t.c<mx);
+  L.innerHTML=T.slice(0,q?40:12).map(t=>`<li><button type="button" data-team="${esc(t.n)}" ${t.c>=mx?"disabled":""} ${t.n===nwTeam?'style="border-color:var(--red);border-width:3px"':""}><span class="bb" style="${t.c>=mx?"background:#888;color:#fff":"background:var(--ok);color:#fff"}">${t.c}/${mx}</span><span>${esc(t.n)}<br><span class="sub">${t.c>=mx?"Full":`${mx-t.c} place${mx-t.c>1?"s":""} free`}${t.n===nwTeam?" · picked":""}</span></span></button></li>`).join("")||`<li class="sub">${q?"No team with free places matches.":"Type to find a team."}</li>`;
+  if(!q&&!nwTeam&&T.length)L.insertAdjacentHTML("afterbegin",'<li class="sub">Teams with free places. Type to search all teams.</li>')}
 async function nwSave(e){const b=e.currentTarget,F=$("nwF"),v=k=>F.elements[k].value.trim(),m=$("nwMsg"),bib=+$("nwBib").value,f={};
   for(const[k]of CHF){const x=k==="nat"||k==="size"?v(k).toUpperCase():v(k);if(x)f[k]=x}
   if(!f.first&&!f.last){m.textContent="Give the new person a name.";return}
   if(!f.sex){m.textContent="Pick men or women.";return}
   if(f.qid&&!/^[23]\d{10}$/.test(f.qid)){m.textContent="QID must be 11 digits starting with 2 or 3.";return}
   if(byBib(bib)){m.textContent=`Bib ${bib} is already taken. Pick another.`;renderAdd();return}
-  if(b.dataset.sure!=="1"){b.dataset.sure="1";b.textContent=`Tap again: add ${(f.first||"")+" "+(f.last||"")} on bib ${bib}`;setTimeout(()=>{if(b.isConnected){b.dataset.sure="";b.textContent="Add participant"}},5000);return}
+  if(nwType==="team"){if(!nwTeam){m.textContent="Pick the team.";return}const c=P.filter(p=>p.team===nwTeam&&!p.gone).length;if(c>=teamMax()){m.textContent=`${nwTeam} already has ${c} members.`;return}f.team=nwTeam}
+  if(b.dataset.sure!=="1"){b.dataset.sure="1";b.textContent=`Tap again: add ${(f.first||"")+" "+(f.last||"")} on bib ${bib}${f.team?" to "+f.team:""}`;setTimeout(()=>{if(b.isConnected){b.dataset.sure="";b.textContent="Add participant"}},5000);return}
   b.disabled=true;b.textContent="Saving…";
   try{const link=await qidUpload(bib);if(link)f.qidUrl=link;await admin("add",{eventId:EV.id,bib,fields:f,device:device||""});
-    const p={bib,first:f.first||"",last:f.last||"",team:"",sex:f.sex,nat:f.nat||"",dob:f.dob||"",ageGroup:"",size:f.size||"",qid:f.qid||"",email:f.email||"",phone:f.phone||"",ice:f.ice||"",icePhone:f.icePhone||"",sigId:null,sigTime:null,merch:false,gone:false};
+    const p={bib,first:f.first||"",last:f.last||"",team:f.team||"",sex:f.sex,nat:f.nat||"",dob:f.dob||"",ageGroup:"",size:f.size||"",qid:f.qid||"",email:f.email||"",phone:f.phone||"",ice:f.ice||"",icePhone:f.icePhone||"",sigId:null,sigTime:null,merch:false,gone:false};
     const i=P.findIndex(x=>x.bib===bib);if(i>=0)P[i]=p;else P.push(p);
-    qidReset();$("nwBox").innerHTML="";renderAdd();
-    m.innerHTML=`Added: bib <b>${bib}</b> is ${esc(fullName(p))}. RR14 gets it within 30 seconds. <button type="button" class="pri" id="nwGo" style="margin-left:10px">Bib pickup for ${bib}</button>`;
+    qidReset();nwTeam="";$("nwBox").innerHTML="";renderAdd();
+    m.innerHTML=`Added: bib <b>${bib}</b> is ${esc(fullName(p))}${p.team?" in "+esc(p.team):" (solo)"}. RR14 gets it within 30 seconds. <button type="button" class="pri" id="nwGo" style="margin-left:10px">Bib pickup for ${bib}</button>`;
     $("nwGo").onclick=()=>{location.hash="#checkin";setTimeout(()=>{$("q").value=String(bib);renderList();select(bib)},50)}}
   catch(err){m.textContent="Not saved: "+err.message;b.disabled=false;b.textContent="Add participant";b.dataset.sure=""}}
 /* Scan on the Change tab picks the bib to change. */
