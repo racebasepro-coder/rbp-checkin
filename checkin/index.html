@@ -490,7 +490,7 @@ body.settings #gear{background:var(--red);color:#fff}
 "use strict";
 {
 let syncState=null,EV=null;
-const APP_VERSION="1.9.2";
+const APP_VERSION="1.9.3";
 const SIZES=["XS","S","M","L","XL","XXL"];
 const FIELDS=[["dob","Date of birth",'type="date"'],["nat","Nation",'autocapitalize="characters" placeholder="e.g. QATAR"'],["qid","QID",'inputmode="numeric"'],["ice","ICE person",'placeholder="Emergency contact name"'],["icePhone","ICE phone",'type="tel" placeholder="+974…"'],["email","Email",'type="email" placeholder="name@example.com"'],["phone","Phone",'type="tel" placeholder="+974…"']];
 const FK=FIELDS.map(f=>f[0]);
@@ -1095,17 +1095,28 @@ function renderNC(){const R=ncRows();$("ncCount").textContent=`· ${R.length}`;
   $("ncTable").innerHTML=`<thead><tr>${ncCols.map(c=>`<th>${c[0]}</th>`).join("")}</tr></thead><tbody>${R.slice(0,300).map(p=>`<tr>${ncCols.map(([h,f])=>`<td>${h==="Bib"?`<span class="bb" style="${bibStyle(p)}">${p.bib}</span>`:esc(f(p))}</td>`).join("")}</tr>`).join("")}</tbody>`;
   $("ncMsg").textContent=R.length>300?`Showing 300 of ${R.length} here; the PDF has all of them.`:R.length?"":"Everybody collected."}
 function loadScript(src){return new Promise((ok,no)=>{const sc=document.createElement("script");sc.src=src;sc.onload=ok;sc.onerror=()=>no(new Error("Could not load "+src.split("/").slice(-1)[0]));document.head.appendChild(sc)})}
+/* The RBP logo is white (for the dark footer); for the PDF it is drawn dark. */
+let pdfLogoData=null;
+function pdfLogo(){if(pdfLogoData)return Promise.resolve(pdfLogoData);return new Promise(ok=>{const im=new Image();im.onload=()=>{try{const c=document.createElement("canvas");c.width=im.naturalWidth;c.height=im.naturalHeight;const x=c.getContext("2d");x.drawImage(im,0,0);x.globalCompositeOperation="source-in";x.fillStyle="#141414";x.fillRect(0,0,c.width,c.height);
+  const d={u:c.toDataURL("image/png"),w:c.width,h:c.height};pdfLogoData=d;ok(d)}catch(e){ok(null)}};im.onerror=()=>ok(null);im.src="logo.png"})}
 async function ncPdf(){const b=$("ncPdf"),m=$("ncMsg");b.disabled=true;b.textContent="Making PDF…";
   try{if(!window.jspdf)await loadScript("https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js");
     if(!window.jspdf.jsPDF.API.autoTable)await loadScript("https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js");
     const R=ncRows(),doc=new window.jspdf.jsPDF({orientation:"landscape",unit:"mm",format:"a4"}),now=new Date(),who={all:"all",solo:"solo only",team:"teams only"}[ncWho];
+    const pad=n=>String(n).padStart(2,"0"),stamp=`${pad(now.getDate())}.${pad(now.getMonth()+1)}.${now.getFullYear()} ${pad(now.getHours())}:${pad(now.getMinutes())}`;
+    const logo=await pdfLogo();
     const total=P.filter(p=>!p.gone).length;
     doc.setFontSize(16);doc.text(`${EV?EV.name:"Event"}: not collected (${who})`,14,15);
-    doc.setFontSize(10);doc.text(`${R.length} of ${total} participants have not collected their bib. Made ${now.toLocaleString()} on ${device||"iPad"}. Internal use only.`,14,22);
+    doc.setFontSize(10);doc.text(`${R.length} of ${total} participants have not collected their bib. Made ${stamp} on ${device||"iPad"}. Internal use only.`,14,22);
     // The PDF's built-in font has Latin letters only: drop accents and emoji; Arabic-only text is marked.
     const pt=t=>{const x=String(t).replace(/[\u2018\u2019]/g,"'").replace(/[\u201c\u201d]/g,'"').normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^\x20-\xff]/g,"").replace(/\s{2,}/g," ").trim();return x||(/[\u0600-\u06ff]/.test(t)?"(Arabic, see app)":"")};
     doc.autoTable({startY:27,head:[ncCols.map(c=>c[0])],body:R.map(p=>ncCols.map(c=>pt(c[1](p)))),styles:{fontSize:9,cellPadding:1.6},headStyles:{fillColor:[227,54,31]},
-      columnStyles:{0:{cellWidth:16,fontStyle:"bold"}},didDrawPage:d=>{doc.setFontSize(8);doc.text(`Page ${doc.internal.getNumberOfPages()}`,doc.internal.pageSize.getWidth()-24,doc.internal.pageSize.getHeight()-6)}});
+      margin:{bottom:18},columnStyles:{0:{cellWidth:16,fontStyle:"bold"}},
+      // Footer on every page: export time left, RBP logo centre, "Page X / total" right.
+      didDrawPage:()=>{const W=doc.internal.pageSize.getWidth(),H=doc.internal.pageSize.getHeight(),y=H-7;doc.setFontSize(8);doc.setTextColor(90);
+        doc.text(`Exported ${stamp}`,14,y);
+        if(logo)doc.addImage(logo.u,"PNG",W/2-15,y-5.2,30,30*logo.h/logo.w);doc.setTextColor(0)}});
+    const n=doc.internal.getNumberOfPages();for(let i=1;i<=n;i++){doc.setPage(i);doc.setFontSize(8);doc.setTextColor(90);doc.text(`Page ${i} / ${n}`,doc.internal.pageSize.getWidth()-14,doc.internal.pageSize.getHeight()-7,{align:"right"})}doc.setTextColor(0);
     const fn=`not-collected-${EV?EV.id:"event"}-${now.toISOString().slice(0,16).replace(/[T:]/g,"-")}.pdf`;doc.save(fn);m.textContent=`PDF ready: ${fn}`}
   catch(e){m.textContent="PDF not made: "+e.message}
   b.disabled=false;b.textContent="Export PDF"}
