@@ -451,7 +451,7 @@ body.settings #gear{background:var(--red);color:#fff}
 "use strict";
 {
 let syncState=null,EV=null;
-const APP_VERSION="1.7.1";
+const APP_VERSION="1.7.2";
 const SIZES=["XS","S","M","L","XL","XXL"];
 const FIELDS=[["dob","Date of birth",'type="date"'],["nat","Nation",'autocapitalize="characters" placeholder="e.g. QATAR"'],["qid","QID",'inputmode="numeric"'],["ice","ICE person",'placeholder="Emergency contact name"'],["icePhone","ICE phone",'type="tel" placeholder="+974…"'],["email","Email",'type="email" placeholder="name@example.com"'],["phone","Phone",'type="tel" placeholder="+974…"']];
 const FK=FIELDS.map(f=>f[0]);
@@ -482,8 +482,8 @@ const NAMES=(()=>{const o={UK:"GB","GREAT BRITAIN":"GB",ENGLAND:"GB",SCOTLAND:"G
 const natIso=n=>{const u=String(n||"").trim().toUpperCase();if(!u)return"";if(ISO2[u])return ISO2[u];if(NAMES[u])return NAMES[u];if(NAMES[normN(u)])return NAMES[normN(u)];if(u.length===2)return u;return""};
 const natCode=n=>{const u=String(n||"").trim().toUpperCase(),i=natIso(u);return u.length===3?u:IOC[i]||i||u};
 const flag=n=>{const c=natIso(n);return c?[...c].map(x=>String.fromCodePoint(127397+x.charCodeAt(0))).join(""):""};
-const MAP_DEF={sigUrl:"Signature",sigTime:"SignatureTime",scope:"PickupScope",by:"CollectedBy",forList:"CollectedFor",desk:"CheckinDevice",merch:"PackageIssued",merchTime:"PackageTime",merchDesk:"PackageDevice",qid:"QID",ageGroup:"AgeGroup.Name",qv:"QatariVerified",dob:"DateOfBirth",nat:"Nation",ice:"ICEName",icePhone:"ICEPhone",phone:"Phone",email:"Email",deleted:"CheckinDeleted"};
-const MAP_LBL={sigUrl:"Signature link",sigTime:"Signature time",scope:"Pickup scope",by:"Collected by",forList:"Collected for",desk:"Bib device",merch:"Package issued",merchTime:"Package time",merchDesk:"Package device",qid:"QID",ageGroup:"Category (read)",qv:"Qatari verified",dob:"Date of birth",nat:"Nation",ice:"ICE person",icePhone:"ICE phone",phone:"Phone",email:"Email",deleted:"Deleted mark"};
+const MAP_DEF={sigUrl:"Signature",qidUrl:"QIDPhoto",sigTime:"SignatureTime",scope:"PickupScope",by:"CollectedBy",forList:"CollectedFor",desk:"CheckinDevice",merch:"PackageIssued",merchTime:"PackageTime",merchDesk:"PackageDevice",qid:"QID",ageGroup:"AgeGroup.Name",qv:"QatariVerified",dob:"DateOfBirth",nat:"Nation",ice:"ICEName",icePhone:"ICEPhone",phone:"Phone",email:"Email",deleted:"CheckinDeleted"};
+const MAP_LBL={sigUrl:"Signature link",qidUrl:"QID photo link",sigTime:"Signature time",scope:"Pickup scope",by:"Collected by",forList:"Collected for",desk:"Bib device",merch:"Package issued",merchTime:"Package time",merchDesk:"Package device",qid:"QID",ageGroup:"Category (read)",qv:"Qatari verified",dob:"Date of birth",nat:"Nation",ice:"ICE person",icePhone:"ICE phone",phone:"Phone",email:"Email",deleted:"Deleted mark"};
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const $=id=>document.getElementById(id);
 const fmt=t=>t?new Date(t).toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"}):"";
@@ -843,9 +843,9 @@ async function chSave(e){const b=e.currentTarget,p=byBib(chBib),F=$("chF"),v=k=>
   if(!Object.keys(ch).length&&!qid.f&&!qid.b){m.textContent="Nothing changed.";return}
   if(b.dataset.sure!=="1"){b.dataset.sure="1";b.textContent=`Tap again: save bib ${p.bib} as ${(v("first")+" "+v("last")).trim()}`;setTimeout(()=>{if(b.isConnected){b.dataset.sure="";b.textContent="Save change"}},5000);return}
   b.disabled=true;b.textContent="Saving…";
-  try{await qidUpload(p.bib);if(Object.keys(ch).length)await admin("change",{eventId:EV.id,bib:p.bib,fields:ch,device:device||""});
+  try{const link=await qidUpload(p.bib);const send=link?{...ch,qidUrl:link}:ch;if(Object.keys(send).length)await admin("change",{eventId:EV.id,bib:p.bib,fields:send,device:device||""});
     Object.assign(p,ch,ch.nat?{nat:ch.nat}:{});const was=fullName({first:cur.first,last:cur.last});
-    m.textContent=`Saved: bib ${p.bib} is now ${fullName(p)} (was ${was}). RR14 gets it within 30 seconds.`;chBib=null;qidReset();$("chQ").value="";renderSwap()}
+    m.textContent=`Saved: bib ${p.bib} is now ${fullName(p)} (was ${was})${link?", QID photos saved (link in RR14 field "+(cfg.map.qidUrl||"QIDPhoto")+")":""}. RR14 gets it within 30 seconds.`;chBib=null;qidReset();$("chQ").value="";renderSwap()}
   catch(err){m.textContent="Not saved: "+err.message;b.disabled=false;b.textContent="Save change";b.dataset.sure=""}}
 $("chQ").oninput=chList;
 $("v-swap").addEventListener("click",e=>{const b=e.target.closest("[data-ch]");if(!b)return;chBib=+b.dataset.ch;qidReset();$("chQ").value="";$("chMsg").textContent="";renderSwap()});
@@ -855,16 +855,19 @@ function loadOCR(){return window.Tesseract?Promise.resolve():new Promise((ok,no)
 async function shrink(file,max=1600){const img=await createImageBitmap(file),s=Math.min(1,max/Math.max(img.width,img.height)),c=document.createElement("canvas");c.width=Math.round(img.width*s);c.height=Math.round(img.height*s);c.getContext("2d").drawImage(img,0,0,c.width,c.height);return await new Promise(r=>c.toBlob(r,"image/jpeg",.85))}
 function openQid(bib){const p=byBib(bib);Object.assign(qid,{bib,f:null,b:null,text:{f:"",b:""}});$("qidH").textContent=`QID for #${bib} · ${fullName(p)}`;
   ["qidFi","qidBi"].forEach(i=>$(i).removeAttribute("src"));const F=$("qidFields").querySelectorAll("input");F.forEach(i=>i.value="");
-  const f=$("qidFields");f.querySelector("[name=qid]").value=p.qid||"";f.querySelector("[name=dob]").value=p.dob||"";f.querySelector("[name=nat]").value=p.nat||"";
+  const f=$("qidFields");f.querySelector("[name=qid]").placeholder=p.qid||"";f.querySelector("[name=nat]").placeholder=p.nat||"";
   $("qidState").textContent="";$("qidMsg").hidden=true;$("qidSave").disabled=true;$("qidOv").classList.add("on")}
+/* OCR nation text ("JORDAN DL", "UNITED KINGDOM 1") -> the longest leading words that are a known country. */
+function natClean(t){const w=String(t).trim().toUpperCase().split(/\s+/);for(let i=Math.min(w.length,5);i>0;i--){const c=w.slice(0,i).join(" ");if(c.length>2&&natIso(c))return c}return""}
+function natName(iso){try{return new Intl.DisplayNames(["en"],{type:"region"}).of(iso).toUpperCase()}catch(e){return iso}}
 /* Qatar ID: 11 digits starting 2/3; dates as DD/MM/YYYY (the earliest is the birth date, a future one the expiry). */
 function parseQid(t){const o={},T=t.replace(/[|]/g,"1").toUpperCase(),q=T.match(/(?:^|\D)([23]\d{10})(?!\d)/)||T.replace(/ /g,"").match(/(?:^|\D)([23]\d{10})(?!\d)/);if(q)o.qid=q[1];
   const ds=[...T.matchAll(/(\d{2})\s*[\/.-]\s*(\d{2})\s*[\/.-]\s*(\d{4})/g)].map(m=>`${m[3]}-${m[2]}-${m[1]}`).filter(d=>!isNaN(Date.parse(d))).sort();
   const now=new Date().toISOString().slice(0,10);if(ds.length){const past=ds.filter(d=>d<now),fut=ds.filter(d=>d>now);if(past.length)o.dob=past[0];if(fut.length)o.exp=fut[fut.length-1]}
-  const n=T.match(/NATIONALITY[^A-Z]*([A-Z][A-Z ]{2,30})/);if(n)o.nat=n[1].trim().split(/\s{2,}/)[0];
+  const n=T.match(/NATIONALITY[^A-Z]*([A-Z][A-Z ]{2,30})/);if(n)o.nat=natClean(n[1]);
   const nm=T.match(/\bNAME[^A-Z]*([A-Z][A-Z' -]{3,60})/);if(nm)o.name=nm[1].trim().split(/\s{2,}/)[0];
   // MRZ on the back (IDQAT...): birth date YYMMDD and nationality code
-  const mrz=T.replace(/ /g,"").match(/(\d{6})\d[MF<]\d{6}\d([A-Z]{3})/);if(mrz){const y=+mrz[1].slice(0,2),yy=(y>+now.slice(2,4)?"19":"20")+mrz[1].slice(0,2);if(!o.dob)o.dob=`${yy}-${mrz[1].slice(2,4)}-${mrz[1].slice(4,6)}`;if(!o.nat)o.nat=mrz[2]}
+  const mrz=T.replace(/ /g,"").match(/(\d{6})\d[MF<]\d{6}\d([A-Z]{3})/);if(mrz){const y=+mrz[1].slice(0,2),yy=(y>+now.slice(2,4)?"19":"20")+mrz[1].slice(0,2);if(!o.dob)o.dob=`${yy}-${mrz[1].slice(2,4)}-${mrz[1].slice(4,6)}`;if(!o.nat&&ISO2[mrz[2]])o.nat=natName(ISO2[mrz[2]])}
   return o}
 async function qidPhoto(side,file){if(!file)return;const st=$("qidState");qid[side]=await shrink(file);$(side==="f"?"qidFi":"qidBi").src=URL.createObjectURL(qid[side]);$("qidSave").disabled=false;
   st.textContent="Reading the card…";
@@ -877,9 +880,14 @@ $("qidF").onchange=e=>{qidPhoto("f",e.target.files[0]);e.target.value=""};
 $("qidB").onchange=e=>{qidPhoto("b",e.target.files[0]);e.target.value=""};
 $("qidCancel").onclick=()=>{$("qidOv").classList.remove("on");chPhotoNote()};
 function qidReset(){Object.assign(qid,{bib:null,f:null,b:null,text:{f:"",b:""}})}
-async function qidUpload(bib){if(!qid.f&&!qid.b)return;const ts=Date.now(),paths={};
+async function qidUpload(bib){if(!qid.f&&!qid.b)return"";const ts=Date.now(),paths={},tok=[...crypto.getRandomValues(new Uint8Array(32))].map(x=>x.toString(16).padStart(2,"0")).join("");
   for(const sd of["f","b"])if(qid[sd]){const path=`${EV.id}/qid/${bib}-${ts}-${sd==="f"?"front":"back"}.jpg`;const{error}=await sb.storage.from(BUCKET).upload(path,qid[sd],{contentType:"image/jpeg"});if(error)throw new Error("QID photo upload failed: "+error.message);paths[sd]=path}
-  const{error}=await sb.from("checkin_qid_docs").insert({event_id:EV.id,bib,front_path:paths.f||null,back_path:paths.b||null,ocr:parseQid(qid.text.f+"\n"+qid.text.b),device:device||""});if(error)throw new Error(error.message)}
+  // One image with front above back: that is what the RR14 link opens.
+  if(qid.f&&qid.b)try{const im=await Promise.all([qid.f,qid.b].map(bl=>createImageBitmap(bl))),W=Math.max(im[0].width,im[1].width),c=document.createElement("canvas");c.width=W;c.height=im[0].height+im[1].height+20;
+    const x=c.getContext("2d");x.fillStyle="#fff";x.fillRect(0,0,c.width,c.height);x.drawImage(im[0],0,0);x.drawImage(im[1],0,im[0].height+20);
+    const both=await new Promise(r=>c.toBlob(r,"image/jpeg",.85));const path=`${EV.id}/qid/${bib}-${ts}-both.jpg`;if(both&&!(await sb.storage.from(BUCKET).upload(path,both,{contentType:"image/jpeg"})).error)paths.both=path}catch(e){}
+  const{data,error}=await sb.from("checkin_qid_docs").insert({event_id:EV.id,bib,front_path:paths.f||null,back_path:paths.b||null,both_path:paths.both||null,ocr:parseQid(qid.text.f+"\n"+qid.text.b),device:device||"",token:tok}).select("id").single();if(error)throw new Error(error.message);
+  return CONF.supabaseUrl.replace(/\/$/,"")+"/functions/v1/checkin-sig?q="+data.id+"&t="+tok}
 $("qidSave").onclick=()=>{const f=$("qidFields"),v=k=>f.querySelector(`[name=${k}]`).value.trim(),F=$("chF");if(!F){$("qidOv").classList.remove("on");return}
   if(v("qid"))F.elements.qid.value=v("qid");if(v("dob"))F.elements.dob.value=v("dob");if(v("nat"))F.elements.nat.value=v("nat").toUpperCase();
   if(v("name")){const w=v("name").split(/\s+/);F.elements.first.value=w[0];F.elements.last.value=w.slice(1).join(" ")}
