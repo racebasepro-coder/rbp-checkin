@@ -263,7 +263,7 @@ body.settings #gear{background:var(--red);color:#fff}
   <section class="view" id="v-swap">
     <h2 style="margin:0 0 4px">Change participant</h2>
     <p class="sub" style="margin:0 0 14px">A bib goes to another person: pick the bib, photograph the new person's QID (both sides) or type the data, then save. RR14 gets the new data within 30 seconds. Pickup and package status stay on the bib.</p>
-    <div class="panel"><h3>Bib</h3><input class="search" id="chQ" type="search" placeholder="Bib or name" autocomplete="off"><ul class="swl" id="chL"></ul></div>
+    <div class="panel"><h3>Bib</h3><div style="display:flex;gap:10px"><input class="search" id="chQ" type="search" placeholder="Bib or name" autocomplete="off" style="flex:1"><button type="button" class="btn" id="chScanBib" style="white-space:nowrap">Scan QR / barcode</button></div><p class="small" id="chScanMsg"></p><ul class="swl" id="chL"></ul></div>
     <div class="panel" id="chForm" hidden></div>
     <p id="chMsg" class="small" style="min-height:1.5em"></p>
   </section>
@@ -451,7 +451,7 @@ body.settings #gear{background:var(--red);color:#fff}
 "use strict";
 {
 let syncState=null,EV=null;
-const APP_VERSION="1.7.3";
+const APP_VERSION="1.7.4";
 const SIZES=["XS","S","M","L","XL","XXL"];
 const FIELDS=[["dob","Date of birth",'type="date"'],["nat","Nation",'autocapitalize="characters" placeholder="e.g. QATAR"'],["qid","QID",'inputmode="numeric"'],["ice","ICE person",'placeholder="Emergency contact name"'],["icePhone","ICE phone",'type="tel" placeholder="+974…"'],["email","Email",'type="email" placeholder="name@example.com"'],["phone","Phone",'type="tel" placeholder="+974…"']];
 const FK=FIELDS.map(f=>f[0]);
@@ -853,6 +853,12 @@ async function chSave(e){const b=e.currentTarget,p=byBib(chBib),F=$("chF"),v=k=>
     m.textContent=`Saved: bib ${p.bib} is now ${fullName(p)} (was ${was})${link?", QID photos saved (link in RR14 field "+(cfg.map.qidUrl||"QIDPhoto")+")":""}. RR14 gets it within 30 seconds.`;chBib=null;qidReset();$("chQ").value="";renderSwap()}
   catch(err){m.textContent="Not saved: "+err.message;b.disabled=false;b.textContent="Save change";b.dataset.sure=""}}
 $("chQ").oninput=chList;
+/* Scan on the Change tab picks the bib to change. */
+function chGot(text){const m=String(text).match(/\d+/g),bib=m&&+m[m.length-1],p=bib&&byBib(bib),e=$("chScanMsg");
+  if(!p){e.textContent="Code read ("+String(text).slice(0,30)+"), but no participant matches it.";return false}
+  e.textContent="";chBib=bib;qidReset();$("chQ").value="";$("chMsg").textContent="";renderSwap();return true}
+$("chScanBib").onclick=()=>$("scanBtn").click();
+$("chQ").addEventListener("keydown",e=>{if(e.key!=="Enter")return;const v=e.target.value.trim();if(/^\d+$/.test(v)||/\d/.test(v)&&!/\s/.test(v)){if(chGot(v))e.preventDefault()}});
 $("v-swap").addEventListener("click",e=>{const b=e.target.closest("[data-ch]");if(!b)return;chBib=+b.dataset.ch;qidReset();$("chQ").value="";$("chMsg").textContent="";renderSwap()});
 /* QID photos for the Change tab: front + back, read on the iPad (Tesseract OCR); they fill the form and are saved with the change. */
 const qid={bib:null,f:null,b:null,text:{f:"",b:""}};
@@ -924,7 +930,7 @@ let zx=null,zxLoad=null;
 function loadZX(){if(zx||zxLoad)return zxLoad;zxLoad=new Promise(res=>{const sc=document.createElement("script");sc.src="https://cdn.jsdelivr.net/npm/@zxing/library@0.21.3/umd/index.min.js";
   sc.onload=()=>{try{const Z=window.ZXing,h=new Map(),F=Z.BarcodeFormat;h.set(Z.DecodeHintType.POSSIBLE_FORMATS,[F.CODE_128,F.CODE_39,F.EAN_13,F.EAN_8,F.ITF,F.UPC_A,F.CODABAR,F.QR_CODE]);h.set(Z.DecodeHintType.TRY_HARDER,true);zx=new Z.MultiFormatReader();zx.setHints(h)}catch(e){}res()};sc.onerror=()=>res();document.head.appendChild(sc)});return zxLoad}
 function zxRead(c){if(!zx)return null;try{const Z=window.ZXing;return zx.decode(new Z.BinaryBitmap(new Z.HybridBinarizer(new Z.HTMLCanvasElementLuminanceSource(c)))).getText()}catch(e){return null}finally{try{zx.reset()}catch(e){}}}
-function gotQR(text){const msg=$("qrmsg"),m=String(text).match(/\d+/g),bib=m&&+m[m.length-1],p=bib&&byBib(bib);
+function gotQR(text){if(location.hash==="#swap")return chGot(text);const msg=$("qrmsg"),m=String(text).match(/\d+/g),bib=m&&+m[m.length-1],p=bib&&byBib(bib);
   if(p){msg.textContent=`Scanned bib ${bib}.`;$("q").value=String(bib);renderList();select(bib);return true}
   msg.textContent="Code read ("+String(text).slice(0,30)+"), but no participant matches it.";return false}
 function stopCam(){clearTimeout(camLoop);camLoop=null;if(camStream)camStream.getTracks().forEach(t=>t.stop());camStream=null;$("camV").srcObject=null;$("camOv").classList.remove("on")}
@@ -998,7 +1004,7 @@ $("q").oninput=()=>{renderList();const v=$("q").value.trim();if(/^\d+$/.test(v)&
 /* USB/Bluetooth barcode scanner: it types the code fast and presses Enter. Caught even when the search box has no focus. */
 let kb="",kbT=0;
 document.addEventListener("keydown",e=>{const t=e.target,inField=t&&(t.tagName==="INPUT"||t.tagName==="TEXTAREA"||t.tagName==="SELECT"||t.isContentEditable);
-  if(inField||e.metaKey||e.ctrlKey||e.altKey||document.querySelector(".ov.on"))return;const v=location.hash.slice(1);if(v&&v!=="checkin")return;
+  if(inField||e.metaKey||e.ctrlKey||e.altKey||document.querySelector(".ov.on"))return;const v=location.hash.slice(1);if(v&&v!=="checkin"&&v!=="swap")return;
   const now=Date.now();if(now-kbT>80)kb="";kbT=now;
   if(e.key==="Enter"){if(kb.length>=1){e.preventDefault();const code=kb;kb="";gotQR(code)}return}
   if(e.key.length===1){kb+=e.key}});
