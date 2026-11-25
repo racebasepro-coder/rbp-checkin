@@ -86,8 +86,10 @@ label.btn input{position:absolute;opacity:0;width:1px;height:1px}
 .bb{border-radius:8px;padding:.08em .22em;display:inline-block;text-align:center}
 .swatch{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.swatch input[type=color]{width:56px;height:44px;padding:2px;border-radius:10px;border:1.5px solid var(--line);background:var(--bg)}.swatch label{display:flex;gap:8px;align-items:center;font-size:14px;font-weight:600}.prev{font:800 34px/1 "Barlow Condensed",sans-serif;padding:.08em .3em;border-radius:10px;min-width:3em;text-align:center}
 .bib .info{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px 20px;margin:0;padding:14px 0 0;border-top:1.5px solid var(--line)}
-.bib .info.r2{grid-template-columns:minmax(0,.6fr) minmax(0,.6fr) minmax(0,1.4fr) minmax(0,1fr) minmax(0,1.4fr)}
-@media(max-width:900px){.bib .info.r2{grid-template-columns:repeat(auto-fit,minmax(min(100%,150px),1fr))}}
+.bib .info.r1{grid-template-columns:minmax(0,1.5fr) max-content minmax(0,1.2fr) max-content max-content}
+.bib .info.r2{grid-template-columns:minmax(0,1.5fr) max-content minmax(0,1.3fr)}
+.bib .info.r2 dd,.bib .info.r1 div+div dd{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.bib .info .fl{font-size:1.15em}
+@media(max-width:900px){.bib .info.r1,.bib .info.r2{grid-template-columns:repeat(auto-fit,minmax(min(100%,150px),1fr))}}
 @media(max-width:520px){.bib .info{grid-template-columns:minmax(0,1fr)}}
 .bib .info+.info{border-top:0;padding-top:10px}
 .bib .info dt{font-size:15px;color:var(--mute);font-weight:600;margin-bottom:2px}
@@ -376,12 +378,12 @@ body.settings #gear{background:var(--red);color:#fff}
 "use strict";
 {
 let syncState=null,EV=null;
-const APP_VERSION="1.4.0";
+const APP_VERSION="1.4.2";
 const SIZES=["XS","S","M","L","XL","XXL"];
-const FIELDS=[["dob","Date of birth",'type="date"'],["nat","Nation",'maxlength="3" autocapitalize="characters" placeholder="CRO"'],["qid","QID",'inputmode="numeric"'],["ice","ICE person",'placeholder="Emergency contact name"'],["icePhone","ICE phone",'type="tel" placeholder="+974…"'],["email","Email",'type="email" placeholder="name@example.com"'],["phone","Phone",'type="tel" placeholder="+974…"']];
+const FIELDS=[["dob","Date of birth",'type="date"'],["nat","Nation",'autocapitalize="characters" placeholder="e.g. QATAR"'],["qid","QID",'inputmode="numeric"'],["ice","ICE person",'placeholder="Emergency contact name"'],["icePhone","ICE phone",'type="tel" placeholder="+974…"'],["email","Email",'type="email" placeholder="name@example.com"'],["phone","Phone",'type="tel" placeholder="+974…"']];
 const FK=FIELDS.map(f=>f[0]);
 /* QID: 11 digits = century (2=19xx, 3=20xx) + birth year (2) + nationality code (3, Qatar 634) + serial (5) */
-function qidCheck(p){const q=String(p.qid||"").replace(/\s/g,""),qat=String(p.nat).toUpperCase()==="QAT";
+function qidCheck(p){const q=String(p.qid||"").replace(/\s/g,""),qat=natCode(p.nat)==="QAT";
   if(!q)return qat?{s:"bad",t:"Nation is Qatar but no QID"}:{s:"none",t:""};
   if(!/^[23]\d{10}$/.test(q))return{s:"bad",t:"QID must be 11 digits starting with 2 or 3"};
   const qq=q.slice(3,6)==="634",yr=(q[0]==="2"?"19":"20")+q.slice(1,3),dy=p.dob?p.dob.slice(0,4):"";
@@ -397,7 +399,16 @@ function bibCss(kind,c){const d=COL_DEF[kind];c=c||{};const bg=hex(c.bg,d.bg),bg
 const bibStyle=p=>bibCss(p.team?"team":"solo",(cfg.colors||{})[p.team?"team":"solo"]);
 const qidMark=c=>c.s==="ok"?`<span class="qv ok" title="${esc(c.t)}" aria-label="${esc(c.t)}">✓</span>`:c.s==="bad"?`<span class="qv bad" title="${esc(c.t)}" aria-label="${esc(c.t)}">!</span>`:"";
 const fieldsHtml=(pre,p)=>FIELDS.map(([k,l,a])=>`<label>${l}<input id="${pre}${k}" ${a} value="${esc(p[k]||"")}"></label>`).join("");
-const ISO2={CRO:"HR",BIH:"BA",SLO:"SI",SRB:"RS",MNE:"ME",ITA:"IT",AUT:"AT",QAT:"QA",GER:"DE",HUN:"HU",GBR:"GB",USA:"US",FRA:"FR",ESP:"ES",NED:"NL",SUI:"CH",POL:"PL",CZE:"CZ",SVK:"SK"};
+/* Nation: RR14 gives full names (MOROCCO) or codes (MAR). Shown as flag + 3-letter sports code. */
+const ISO2={},IOC={};"AFG AF ALB AL ALG DZ AND AD ANG AO ANT AG ARG AR ARM AM ARU AW ASA AS AUS AU AUT AT AZE AZ BAH BS BAN BD BAR BB BDI BI BEL BE BEN BJ BER BM BHU BT BIH BA BIZ BZ BLR BY BOL BO BOT BW BRA BR BRN BH BRU BN BUL BG BUR BF CAF CF CAM KH CAN CA CAY KY CGO CG CHA TD CHI CL CHN CN CIV CI CMR CM COD CD COK CK COL CO COM KM CPV CV CRC CR CRO HR CUB CU CYP CY CZE CZ DEN DK DJI DJ DMA DM DOM DO ECU EC EGY EG ERI ER ESA SV ESP ES EST EE ETH ET FIJ FJ FIN FI FRA FR FSM FM GAB GA GAM GM GBR GB GBS GW GEO GE GEQ GQ GER DE GHA GH GRE GR GRN GD GUA GT GUI GN GUM GU GUY GY HAI HT HKG HK HON HN HUN HU INA ID IND IN IRI IR IRL IE IRQ IQ ISL IS ISR IL ISV VI ITA IT IVB VG JAM JM JOR JO JPN JP KAZ KZ KEN KE KGZ KG KIR KI KOR KR KOS XK KSA SA KUW KW LAO LA LAT LV LBA LY LBN LB LBR LR LCA LC LES LS LIE LI LTU LT LUX LU MAD MG MAR MA MAS MY MAW MW MDA MD MDV MV MEX MX MGL MN MHL MH MKD MK MLI ML MLT MT MNE ME MON MC MOZ MZ MRI MU MTN MR MYA MM NAM NA NCA NI NED NL NEP NP NGR NG NIG NE NOR NO NRU NR NZL NZ OMA OM PAK PK PAN PA PAR PY PER PE PHI PH PLE PS PLW PW PNG PG POL PL POR PT PRK KP PUR PR QAT QA ROU RO RSA ZA RUS RU RWA RW SAM WS SEN SN SEY SC SGP SG SKN KN SLE SL SLO SI SMR SM SOL SB SOM SO SRB RS SRI LK SSD SS STP ST SUD SD SUI CH SUR SR SVK SK SWE SE SWZ SZ SYR SY TAN TZ TGA TO THA TH TJK TJ TKM TM TLS TL TOG TG TPE TW TTO TT TUN TN TUR TR TUV TV UAE AE UGA UG UKR UA URU UY USA US UZB UZ VAN VU VEN VE VIE VN VIN VC YEM YE ZAM ZM ZIM ZW".replace(/(\w{3}) (\w\w)/g,(_,a,b)=>{ISO2[a]=b;IOC[b]=a});
+const normN=n=>String(n).trim().toUpperCase().replace(/\s*\(.*\)/,"").replace(/ & /g," AND ").replace(/^ST\.? /,"SAINT ").replace(/’/g,"'");
+const NAMES=(()=>{const o={UK:"GB","GREAT BRITAIN":"GB",ENGLAND:"GB",SCOTLAND:"GB",WALES:"GB","NORTHERN IRELAND":"GB","UNITED STATES OF AMERICA":"US","UNITED STATES":"US",AMERICA:"US","RUSSIAN FEDERATION":"RU",RUSSIA:"RU",TURKEY:"TR","TÜRKIYE":"TR",PALESTINE:"PS","STATE OF PALESTINE":"PS",SYRIA:"SY","SYRIAN ARAB REPUBLIC":"SY",IRAN:"IR","IRAN, ISLAMIC REPUBLIC OF":"IR","HONG KONG":"HK","SOUTH KOREA":"KR","KOREA, REPUBLIC OF":"KR","NORTH KOREA":"KP","IVORY COAST":"CI","COTE D'IVOIRE":"CI","CZECH REPUBLIC":"CZ",CZECHIA:"CZ",VIETNAM:"VN","VIET NAM":"VN",MACEDONIA:"MK","NORTH MACEDONIA":"MK",SWAZILAND:"SZ",ESWATINI:"SZ",BURMA:"MM",UAE:"AE","UNITED ARAB EMIRATES":"AE",KOSOVO:"XK","CAPE VERDE":"CV",LAOS:"LA",MOLDOVA:"MD",TANZANIA:"TZ",BOLIVIA:"BO",VENEZUELA:"VE","DR CONGO":"CD","DEMOCRATIC REPUBLIC OF THE CONGO":"CD",CONGO:"CG",TAIWAN:"TW",BRUNEI:"BN","SAINT KITTS AND NEVIS":"KN","SAINT LUCIA":"LC","SAINT VINCENT AND THE GRENADINES":"VC","BOSNIA AND HERZEGOVINA":"BA","BOSNIA":"BA",HOLLAND:"NL",MACAO:"MO",MACAU:"MO",GAMBIA:"GM","THE GAMBIA":"GM",BAHAMAS:"BS","THE BAHAMAS":"BS"};
+  const aliases=new Set(Object.keys(o));
+  try{const dn=new Intl.DisplayNames(["en"],{type:"region"}),A="ABCDEFGHIJKLMNOPQRSTUVWXYZ";for(const x of A)for(const y of A){const c=x+y,n=dn.of(c);const k=n&&n!==c&&normN(n);if(k&&(!(k in o)||(IOC[c]&&!IOC[o[k]]&&!aliases.has(k))))o[k]=c}}catch(e){}
+  return o})();
+const natIso=n=>{const u=String(n||"").trim().toUpperCase();if(!u)return"";if(ISO2[u])return ISO2[u];if(NAMES[u])return NAMES[u];if(NAMES[normN(u)])return NAMES[normN(u)];if(u.length===2)return u;return""};
+const natCode=n=>{const u=String(n||"").trim().toUpperCase(),i=natIso(u);return u.length===3?u:IOC[i]||i||u};
+const flag=n=>{const c=natIso(n);return c?[...c].map(x=>String.fromCodePoint(127397+x.charCodeAt(0))).join(""):""};
 const MAP_DEF={sigUrl:"Signature",sigTime:"SignatureTime",scope:"PickupScope",by:"CollectedBy",forList:"CollectedFor",desk:"CheckinDevice",merch:"PackageIssued",merchTime:"PackageTime",merchDesk:"PackageDevice",qid:"QID",ageGroup:"AgeGroup.Name",qv:"QatariVerified",dob:"DateOfBirth",nat:"Nation",ice:"ICEName",icePhone:"ICEPhone",phone:"Phone",email:"Email",deleted:"CheckinDeleted"};
 const MAP_LBL={sigUrl:"Signature link",sigTime:"Signature time",scope:"Pickup scope",by:"Collected by",forList:"Collected for",desk:"Bib device",merch:"Package issued",merchTime:"Package time",merchDesk:"Package device",qid:"QID",ageGroup:"Category (read)",qv:"Qatari verified",dob:"Date of birth",nat:"Nation",ice:"ICE person",icePhone:"ICE phone",phone:"Phone",email:"Email",deleted:"Deleted mark"};
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -405,7 +416,6 @@ const $=id=>document.getElementById(id);
 const fmt=t=>t?new Date(t).toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"}):"";
 const fdate=d=>{const m=/^(\d{4})-(\d{2})-(\d{2})/.exec(d||"");return m?`${m[3]}.${m[2]}.${m[1]}`:"not set"};
 const norm=s=>String(s).toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/đ/g,"d");
-const flag=n=>{const c=ISO2[n]||(String(n).length===2?n:"");return c?[...c.toUpperCase()].map(x=>String.fromCodePoint(127397+x.charCodeAt(0))).join(""):""};
 const ls={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}}};
 let P=[],sel=null,picked=new Set(),showDone=false,lastRR="",cfg={map:{...MAP_DEF}},device=ls.get("ck_device")||"";
 const byBib=b=>P.find(p=>p.bib===b);
@@ -624,10 +634,10 @@ function renderList(){
   $("res").innerHTML=L.length?L.map(p=>`<li><button class="row" role="option" data-bib="${p.bib}" aria-selected="${sel===p.bib}"><span class="num"><span class="bb" style="${bibStyle(p)}">${p.bib}</span></span><span><span class="nm">${esc(fullName(p))}</span> <span class="flag">${flag(p.nat)}</span><br><span class="sub">${p.team?"Team · "+esc(p.team):"Solo"}</span></span>${status(p)}</button></li>`).join(""):'<li class="empty">No match.</li>';
 }
 function select(bib){sel=bib;lastRR="";$("q").value="";const p=byBib(bib);picked=new Set(p.sigTime?teamOf(p).filter(m=>!m.sigTime).map(m=>m.bib):[bib]);$("q").blur();renderList();renderDetail();saveDraft()}
-function bibCard(p){const v=x=>x?`<dd>${esc(x)}</dd>`:`<dd class="none">not set</dd>`;
+function bibCard(p){const v=x=>x?`<dd title="${esc(x)}">${esc(x)}</dd>`:`<dd class="none">not set</dd>`;
   return `<div class="bib" id="card"><button type="button" class="pen cls" id="cardX" aria-label="Close, back to search"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button><button type="button" class="pen" data-edit="${p.bib}" aria-label="Edit details"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></button><div class="team">${p.team?esc(p.team):"Solo"}</div><div class="line"><span class="big" style="${bibStyle(p)}">${p.bib}</span><span class="flag" title="${esc(p.nat)}">${flag(p.nat)}</span><span class="who">${esc(fullName(p))}</span></div>
-  <dl class="info"><div><dt>QID</dt>${(()=>{const c=qidCheck(p);return `<dd>${p.qid?esc(p.qid):`<span class="none">not set</span>`} ${qidMark(c)}${c.s!=="none"?`<span class="qvt ${c.s}">${esc(c.t)}</span>`:""}</dd>`})()}</div><div><dt>Date of birth</dt>${p.dob?`<dd>${fdate(p.dob)}</dd>`:v("")}</div><div><dt>Category</dt>${v(p.ageGroup)}</div></dl>
-  <dl class="info r2"><div><dt>Nation</dt>${v(p.nat)}</div><div><dt>T-shirt</dt>${v(p.size)}</div><div><dt>Email</dt>${v(p.email)}</div><div><dt>Phone</dt>${v(p.phone)}</div><div><dt>ICE contact</dt>${v([p.ice,p.icePhone].filter(Boolean).join(" · "))}</div></dl><div class="stripe"></div></div>`}
+  <dl class="info r1"><div><dt>QID</dt>${(()=>{const c=qidCheck(p);return `<dd>${p.qid?esc(p.qid):`<span class="none">not set</span>`} ${qidMark(c)}${c.s!=="none"?`<span class="qvt ${c.s}">${esc(c.t)}</span>`:""}</dd>`})()}</div><div><dt>Date of birth</dt>${p.dob?`<dd>${fdate(p.dob)}</dd>`:v("")}</div><div><dt>Category</dt>${v(p.ageGroup)}</div><div><dt>Nation</dt>${p.nat?`<dd title="${esc(p.nat)}">${flag(p.nat)?`<span class="fl">${flag(p.nat)}</span> `:""}${esc(natCode(p.nat))}</dd>`:v("")}</div><div><dt>T-shirt</dt>${v(p.size)}</div></dl>
+  <dl class="info r2"><div><dt>Email</dt>${v(p.email)}</div><div><dt>Phone</dt>${v(p.phone)}</div><div><dt>ICE contact</dt>${v([p.ice,p.icePhone].filter(Boolean).join(" · "))}</div></dl><div class="stripe"></div></div>`}
 function renderDetail(){
   const d=$("detail"),p=sel&&byBib(sel);
   if(!p){d.innerHTML=lastRR||'<div class="empty">Search or scan a QR code to pick a participant.</div>';return}
