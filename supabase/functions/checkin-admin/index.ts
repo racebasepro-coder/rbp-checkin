@@ -33,7 +33,7 @@ Deno.serve(async (req) => {
   const { data: who } = await sb.auth.getUser(jwt);
   if (!who?.user) return json({ error: "Sign in first." }, 401);
 
-  const { action, pin, token, value, deviceId, eventId, name, listUrl, writeUrl, copy, copyFrom } = await req.json().catch(() => ({}));
+  const { action, pin, token, value, deviceId, eventId, name, listUrl, writeUrl, copy, copyFrom, sigId, bib } = await req.json().catch(() => ({}));
   const { data: row } = await sb.from("checkin_secret").select("pin_hash").maybeSingle();
   const hash = row?.pin_hash as string | null;
 
@@ -127,6 +127,13 @@ Deno.serve(async (req) => {
     const ev = eventId || (await active())?.id;
     await sb.from("checkin_outbox").update({ attempts: 0 }).eq("event_id", ev).is("sent_at", null);
     return json({ ok: true });
+  }
+  if (action === "removePickup") {
+    // A wrong check-in: clears signature and package for the pickup (or one bib of it) and tells RR14.
+    if (!eventId || !sigId) return json({ error: "Missing event or pickup" }, 400);
+    const { data: n, error } = await sb.rpc("checkin_admin_remove", { p_event: eventId, p_sig_id: sigId, p_bib: bib ?? null });
+    if (error) return json({ error: error.message }, 500);
+    return json({ ok: true, removed: n });
   }
   return json({ error: "Unknown action" }, 400);
 });

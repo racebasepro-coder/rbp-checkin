@@ -24,6 +24,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,label.btn:focus-wi
 button.pri{background:var(--red);border-color:var(--red);color:#fff}
 button:disabled{opacity:.4;cursor:not-allowed}
 button.ghost{border-color:var(--line)}
+button.ghost.danger{color:var(--red);border-color:var(--red)}
 body{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-rows:minmax(0,1fr) auto;min-height:100vh;min-height:100dvh}
 aside{grid-row:1/3;grid-column:2}main{grid-column:1;grid-row:1}
 main{padding-bottom:24px}
@@ -353,7 +354,7 @@ body.settings #gear{background:var(--red);color:#fff}
 "use strict";
 {
 let syncState=null,EV=null;
-const APP_VERSION="1.3.2";
+const APP_VERSION="1.3.3";
 const SIZES=["XS","S","M","L","XL","XXL"];
 const FIELDS=[["dob","Date of birth",'type="date"'],["nat","Nation",'maxlength="3" autocapitalize="characters" placeholder="CRO"'],["qid","QID",'inputmode="numeric"'],["ice","ICE person",'placeholder="Emergency contact name"'],["icePhone","ICE phone",'type="tel" placeholder="+974…"'],["email","Email",'type="email" placeholder="name@example.com"'],["phone","Phone",'type="tel" placeholder="+974…"']];
 const FK=FIELDS.map(f=>f[0]);
@@ -531,16 +532,17 @@ async function openLogin(purpose){loginFor=purpose;
   let st={hasPin:true};try{st=await admin("status")}catch(e){$("loginMsg").textContent="Cannot reach the server: "+e.message}
   firstSetup=!st.hasPin;$("loginBtn").textContent=firstSetup?"Set PIN":"Unlock";
   if(purpose==="dup"&&firstSetup){askDevice("Set the RBP admin PIN in settings first.");return}
-  $("loginSub").textContent=purpose==="dup"?`Tablet ${dupBase} is active on another iPad. The RBP admin PIN lets this iPad run as ${dupBase}_1.`:firstSetup?"First setup: choose the RBP admin PIN or password. Every device will use it.":"Settings are central for every device. Only the RBP admin can open them.";
+  if(purpose==="remove"&&firstSetup){rmPend=null;$("detail").insertAdjacentHTML("beforeend",`<div class="note warn">Set the RBP admin PIN in settings first.</div>`);return}
+  $("loginSub").textContent=purpose==="remove"?"Removing a check-in needs the RBP admin PIN. The bib becomes open again here and in RR14.":purpose==="dup"?`Tablet ${dupBase} is active on another iPad. The RBP admin PIN lets this iPad run as ${dupBase}_1.`:firstSetup?"First setup: choose the RBP admin PIN or password. Every device will use it.":"Settings are central for every device. Only the RBP admin can open them.";
   $("loginOv").classList.add("on");f.elements.pass.focus()}
-$("loginCancel").onclick=()=>$("loginOv").classList.remove("on");
+$("loginCancel").onclick=()=>{rmPend=null;$("loginOv").classList.remove("on")};
 $("loginForm").onsubmit=async e=>{e.preventDefault();const f=e.target,m=$("loginMsg"),pw=f.elements.pass.value;
   if(firstSetup&&pw.length<4){m.textContent="Use at least 4 characters or digits.";return}
   $("loginBtn").disabled=true;
   try{const r=await admin("unlock",{pin:pw});adminTok=r.token;unlockUntil=Date.now()+(r.ttl||600000)-15000}
   catch(err){m.textContent=err.message||"Wrong PIN or password.";f.elements.pass.value="";return}
   finally{$("loginBtn").disabled=false}
-  $("loginOv").classList.remove("on");if(loginFor==="dup"){await takeDup(dupBase);return}
+  $("loginOv").classList.remove("on");if(loginFor==="dup"){await takeDup(dupBase);return}if(loginFor==="remove"){await doRemove();return}
   openSettings()};
 $("syncNow").onclick=async e=>{const b=e.currentTarget;b.disabled=true;b.textContent="Syncing…";try{const r=await admin("syncNow"),x=(r.events&&EV&&r.events[EV.id])||r;syncState=x;renderSync();b.textContent=x.ok?"Synced":"Sync failed, see above"}catch(err){b.textContent=err.message}setTimeout(()=>{b.disabled=false;b.textContent="Sync from RR14 now"},3000)};
 $("retryRR").onclick=async e=>{const b=e.currentTarget;b.disabled=true;try{await admin("retryOutbox",{eventId:EV&&EV.id});b.textContent="Queued again"}catch(err){b.textContent=err.message}setTimeout(()=>{b.disabled=false;b.textContent="Retry failed RR14 writes"},3000)};
@@ -595,7 +597,7 @@ function renderDetail(){
   if(!p){d.innerHTML=lastRR||'<div class="empty">Search or scan a QR code to pick a participant.</div>';return}
   let h=bibCard(p);
   if(p.sigTime){const by=byBib(p.by),grp=groupOf(p.sigId);
-    h+=`<div class="panel"><h3>Bib already collected</h3><p>${by&&by.bib!==p.bib?`Collected by teammate <b>${esc(fullName(by))}</b> (#${by.bib})`:"Collected in person"} at ${fmt(p.sigTime)} on ${esc(p.desk||"unknown device")}.${grp.length>1?` Same pickup: ${grp.map(m=>"#"+m.bib).join(", ")}.`:""} ${p.merch?"Package issued.":"Package not issued yet."}</p><img class="sig" id="sigimg" alt="Signature"><div class="acts">${grp.some(m=>m.merch)?"":`<button class="ghost" id="undo">Undo this pickup</button>`}</div></div>`}
+    h+=`<div class="panel"><h3>Bib already collected</h3><p>${by&&by.bib!==p.bib?`Collected by teammate <b>${esc(fullName(by))}</b> (#${by.bib})`:"Collected in person"} at ${fmt(p.sigTime)} on ${esc(p.desk||"unknown device")}.${grp.length>1?` Same pickup: ${grp.map(m=>"#"+m.bib).join(", ")}.`:""} ${p.merch?"Package issued.":"Package not issued yet."}</p><img class="sig" id="sigimg" alt="Signature"><div class="acts">${grp.some(m=>m.merch)?"":`<button class="ghost" id="undo">Undo this pickup</button>`}<button class="ghost danger" id="adRm">Remove check-in (admin)</button>${grp.length>1?`<button class="ghost danger" id="adRm1">Remove only #${p.bib} (admin)</button>`:""}</div></div>`}
   const open=teamOf(p).filter(m=>!m.sigTime);
   if(open.length){
     if(p.team){const selfOpen=!p.sigTime,mates=open.filter(m=>m.bib!==p.bib),row=m=>`<div class="mem"><input type="checkbox" id="m${m.bib}" data-m="${m.bib}" ${picked.has(m.bib)?"checked":""}><label for="m${m.bib}"><span class="num"><span class="bb" style="${bibStyle(m)}">${m.bib}</span></span><span class="flag">${flag(m.nat)}</span><span class="mn">${esc(fullName(m))}${m.bib===p.bib?" (self)":""}</span><span class="qid" id="qid${m.bib}">${esc(m.qid||"no QID")} ${qidMark(qidCheck(m))}</span></label><button type="button" class="pen" data-edit="${m.bib}" aria-label="Edit ${esc(fullName(m))}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></button></div>`;
@@ -604,7 +606,7 @@ function renderDetail(){
     h+=`<div class="panel"><h3>Signature${n>1?` for ${n} people`:""}</h3><div class="pad" id="pad"><canvas id="cv"></canvas><span></span><em>Sign above the line</em></div><div class="acts"><button class="ghost" id="clr">Clear</button><button class="pri" id="ok" disabled>Confirm pickup</button></div></div>`;
   }
   d.innerHTML=h;
-  if(p.sigTime){RR.sig(p.sigId).then(s=>{const i=$("sigimg");if(i&&s)i.src=s;else if(i)i.remove()}).catch(()=>{const i=$("sigimg");if(i)i.remove()});const u=$("undo");if(u)u.onclick=()=>undo(p.sigId)}
+  if(p.sigTime){RR.sig(p.sigId).then(s=>{const i=$("sigimg");if(i&&s)i.src=s;else if(i)i.remove()}).catch(()=>{const i=$("sigimg");if(i)i.remove()});const u=$("undo");if(u)u.onclick=()=>undo(p.sigId);const r=$("adRm"),r1=$("adRm1");r.onclick=()=>adminRemove(p.sigId,null,r);if(r1)r1.onclick=()=>adminRemove(p.sigId,p.bib,r1)}
   d.querySelectorAll("[data-m]").forEach(c=>c.onchange=()=>{const b=+c.dataset.m;c.checked?picked.add(b):picked.delete(b);refreshCount()});
   const ms=$("mSelf"),mt=$("mTeam"),mw=$("mates");
   if(ms)ms.onclick=()=>{ms.setAttribute("aria-pressed","true");if(mt)mt.setAttribute("aria-pressed","false");mw.hidden=true;picked=new Set([p.bib]);refreshCount()};
@@ -658,7 +660,17 @@ async function doConfirm(cv){
     sel=null;ss.set("ck_draft",null);$("q").value="";$("q").focus();render();
   }catch(e){btn.disabled=false;btn.textContent="Confirm pickup";$("detail").insertAdjacentHTML("beforeend",`<div class="note warn">Could not save: ${esc(e&&e.message||e)}. Try again.</div>`)}
 }
-async function undo(sigId){try{await RR.undo(sigId);groupOf(sigId).forEach(m=>Object.assign(m,{sigId:null,sigTime:null,sigUrl:null,by:null,scope:null,desk:null,qv:null}))}catch(e){$("detail").insertAdjacentHTML("beforeend",`<div class="note warn">Could not undo: ${esc(e.message)}</div>`);return}render()}
+/* RBP admin removes a wrong check-in, also after the package was issued: needs the admin PIN, asks twice. */
+let rmPend=null;
+function adminRemove(sigId,bib,btn){
+  if(btn.dataset.sure!=="1"){const t=btn.textContent;btn.dataset.sure="1";btn.textContent=bib?`Tap again: remove #${bib}`:"Tap again: remove whole check-in";setTimeout(()=>{if(btn.isConnected){btn.dataset.sure="";btn.textContent=t}},4000);return}
+  rmPend={sigId,bib};if(Date.now()<unlockUntil){doRemove();return}openLogin("remove")}
+async function doRemove(){const x=rmPend;rmPend=null;if(!x)return;
+  try{await admin("removePickup",{eventId:EV.id,sigId:x.sigId,bib:x.bib})}
+  catch(e){$("detail").insertAdjacentHTML("beforeend",`<div class="note warn">Could not remove: ${esc(e.message)}</div>`);return}
+  groupOf(x.sigId).filter(m=>!x.bib||m.bib===x.bib).forEach(m=>Object.assign(m,{sigId:null,sigTime:null,sigUrl:null,by:null,scope:null,desk:null,qv:null,merch:false,merchTime:null,merchDesk:null}));
+  if(sel)select(sel);else render()}
+async function undo(sigId){try{await RR.undo(sigId);groupOf(sigId).forEach(m=>Object.assign(m,{sigId:null,sigTime:null,sigUrl:null,by:null,scope:null,desk:null,qv:null}))}catch(e){$("detail").insertAdjacentHTML("beforeend",`<div class="note warn">Could not undo: ${esc(e.message)}</div>`);return}if(sel)select(sel);else render()}
 
 /* ---- QR from a photo (live camera needs the hosted version) ---- */
 $("qr").onchange=async e=>{const f=e.target.files[0];e.target.value="";if(!f)return;const msg=$("qrmsg");msg.textContent="Reading QR code…";
