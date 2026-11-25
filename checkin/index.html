@@ -451,7 +451,7 @@ body.settings #gear{background:var(--red);color:#fff}
 "use strict";
 {
 let syncState=null,EV=null;
-const APP_VERSION="1.7.0";
+const APP_VERSION="1.7.1";
 const SIZES=["XS","S","M","L","XL","XXL"];
 const FIELDS=[["dob","Date of birth",'type="date"'],["nat","Nation",'autocapitalize="characters" placeholder="e.g. QATAR"'],["qid","QID",'inputmode="numeric"'],["ice","ICE person",'placeholder="Emergency contact name"'],["icePhone","ICE phone",'type="tel" placeholder="+974…"'],["email","Email",'type="email" placeholder="name@example.com"'],["phone","Phone",'type="tel" placeholder="+974…"']];
 const FK=FIELDS.map(f=>f[0]);
@@ -531,7 +531,7 @@ function askEvent(){showEvents();$("evOv").classList.add("on")}
 $("evPick").onclick=e=>{const b=e.target.closest("[data-ev]");if(!b)return;if(EV&&b.dataset.ev===EV.id){$("evOv").classList.remove("on");return}
   ls.set("ck_event",b.dataset.ev);ss.set("ck_draft",null);location.reload()};
 $("evName").onclick=()=>{if(sel&&$("cv")&&ink){$("qrmsg").textContent="Finish or clear the open signature first.";return}askEvent()};
-const idle=()=>!(sel&&$("cv"))&&!document.querySelector(".ov.on")&&!document.body.classList.contains("settings")&&!$("doneOv").classList.contains("on")&&!$("camOv").classList.contains("on");
+const idle=()=>!(sel&&$("cv"))&&!(chBib&&location.hash==="#swap")&&!document.querySelector(".ov.on")&&!document.body.classList.contains("settings")&&!$("doneOv").classList.contains("on")&&!$("camOv").classList.contains("on");
 function reloadWhenIdle(){if(idle())location.reload();else setTimeout(reloadWhenIdle,3000)}
 let rt=0;function soon(){clearTimeout(rt);rt=setTimeout(()=>{if(sel&&$("cv")&&!["merch","stats"].includes(location.hash.slice(1))){renderList();return}render()},120)}
 
@@ -820,7 +820,9 @@ const CHF=[["first","First name",""],["last","Last name",""],["sex","Gender","se
 function chFind(t){t=t.trim().toLowerCase();if(!t)return[];return P.filter(p=>String(p.bib).startsWith(t)||fullName(p).toLowerCase().includes(t)||(p.team||"").toLowerCase().includes(t)).sort((x,y)=>x.bib-y.bib).slice(0,6)}
 function chList(){const q=$("chQ"),cur=chBib&&byBib(chBib),rows=q.value.trim()?chFind(q.value):cur?[cur]:[];
   $("chL").innerHTML=rows.map(p=>`<li><button type="button" data-ch="${p.bib}" ${chBib===p.bib?'style="border-color:var(--red);border-width:3px"':""}><span class="bb" style="${bibStyle(p)}">${p.bib}</span><span class="flag">${flag(p.nat)}</span><span>${esc(fullName(p))}<br><span class="sub">${p.team?esc(p.team):"Solo"}</span></span></button></li>`).join("")||(q.value.trim()?'<li class="sub">No match.</li>':"")}
-function renderSwap(){chList();const p=chBib&&byBib(chBib),box=$("chForm");if(!p){box.hidden=true;box.innerHTML="";return}
+function renderSwap(){chList();const p=chBib&&byBib(chBib),box=$("chForm");if(!p){box.hidden=true;box.innerHTML="";box.dataset.bib="";return}
+  // Live sync re-renders this view often: keep a form that is already open so typed values stay.
+  if(box.dataset.bib===String(p.bib)&&$("chF"))return;box.dataset.bib=String(p.bib);
   box.hidden=false;const val=k=>({first:p.first,last:p.last,sex:p.sex,nat:p.nat,dob:p.dob,qid:p.qid,email:p.email,phone:p.phone,ice:p.ice,icePhone:p.icePhone,size:p.size})[k]||"";
   const inp=([k,l,a])=>a==="sel"?`<label>${l}<select name="${k}"><option value="M" ${val(k)==="M"?"selected":""}>Men</option><option value="W" ${val(k)==="W"?"selected":""}>Women</option></select></label>`
     :a==="size"?`<label>${l}<select name="${k}">${[...new Set([...SIZES,val(k)].filter(Boolean))].map(z=>`<option ${z===val(k)?"selected":""}>${esc(z)}</option>`).join("")}</select></label>`
