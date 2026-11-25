@@ -191,7 +191,7 @@ body.settings #gear{background:var(--red);color:#fff}
     <a href="#stats" data-v="stats" title="Statistics"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg><span class="lbl">Statistics</span></a>
   </nav>
   <div class="foot">
-    <span class="chip lbl" id="evName" style="font-weight:700;opacity:1"></span>
+    <button type="button" class="chip lbl" id="evName" title="Change event" style="font-weight:700;opacity:1;background:none;border:0;color:inherit;text-align:left;cursor:pointer;text-decoration:underline dotted"></button>
     <span class="chip lbl" id="mode">Connecting…</span>
     <button id="tabBtn" class="sb" title="Change device"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="2.5" width="14" height="19" rx="2"/><path d="M11 18.5h2"/></svg><span class="lbl" id="tabLbl">Tablet ?</span><span class="mini" id="tabMini"></span></button>
     <button id="gear" class="sb" title="RR14 settings"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg><span class="lbl">Settings</span></button>
@@ -235,6 +235,15 @@ body.settings #gear{background:var(--red);color:#fff}
   </section>
 </main>
 <footer class="brandbar" id="brandbar"><span class="slogan" id="slogan">Made with Passion. Driven by Data.</span><img class="rbp" src="logo.png" alt="RaceBasePro" width="120" height="28"><span class="ver" id="ver"></span></footer>
+
+<div class="ov" id="evOv" role="dialog" aria-modal="true" aria-labelledby="evH">
+  <div class="sheet">
+    <h2 id="evH">Which event?</h2>
+    <p class="sub">This iPad works on the event you pick. You can change it later from the menu.</p>
+    <div class="tabs" id="evPick"></div>
+    <p class="small" id="evPickMsg" style="min-height:1.5em;margin:10px 0 0"></p>
+  </div>
+</div>
 
 <div class="ov" id="tabOv" role="dialog" aria-modal="true" aria-labelledby="tabH">
   <div class="sheet">
@@ -287,11 +296,11 @@ body.settings #gear{background:var(--red);color:#fff}
     <h4>Active devices</h4>
     <div id="devList"></div>
     <h4>Events</h4>
-    <p class="sub" style="margin:0 0 6px">Every iPad works on the active event. Each event keeps its own participants, signatures, statistics and RR14 links.</p>
+    <p class="sub" style="margin:0 0 6px">Open events can be picked on any iPad. Each event keeps its own participants, signatures, statistics and RR14 links.</p>
     <div id="evList"><p class="sub">Loading…</p></div>
     <div class="form" id="rrLinks">
-      <label class="wide">RR14 list link for the active event (read, JSON)<input name="evList" data-skip type="url" autocomplete="off" placeholder="https://…"></label>
-      <label class="wide">RR14 write link for the active event (part/savefields)<input name="evWrite" data-skip type="url" autocomplete="off" placeholder="https://…"></label>
+      <label class="wide">RR14 list link for this iPad's event (read, JSON)<input name="evList" data-skip type="url" autocomplete="off" placeholder="https://…"></label>
+      <label class="wide">RR14 write link for this iPad's event (part/savefields)<input name="evWrite" data-skip type="url" autocomplete="off" placeholder="https://…"></label>
     </div>
     <p class="small" style="margin:4px 0">Leave a field empty to keep the stored link. The links are stored on the server and never sent to the iPads.</p>
     <div class="acts" style="justify-content:flex-start"><button type="button" class="ghost" id="evSaveLinks">Save RR14 links</button><button type="button" class="ghost" id="evNewBtn">New event</button></div>
@@ -301,7 +310,7 @@ body.settings #gear{background:var(--red);color:#fff}
         <label>Event ID<input name="newEvId" data-skip autocapitalize="none" placeholder="doha-run-2026"></label>
         <label class="wide">RR14 list link (read, JSON)<input name="newEvList" data-skip type="url" autocomplete="off" placeholder="https://…"></label>
         <label class="wide">RR14 write link (part/savefields)<input name="newEvWrite" data-skip type="url" autocomplete="off" placeholder="https://…"></label>
-        <label class="wide"><span><input type="checkbox" name="newEvCopy" data-skip checked style="width:22px;height:22px;vertical-align:middle"> Copy colours, field names and slogan from the active event</span></label>
+        <label class="wide"><span><input type="checkbox" name="newEvCopy" data-skip checked style="width:22px;height:22px;vertical-align:middle"> Copy colours, field names and slogan from this iPad's event</span></label>
       </div>
       <div class="acts" style="justify-content:flex-start"><button type="button" class="pri" id="evCreate">Create event</button></div>
     </div>
@@ -312,7 +321,7 @@ body.settings #gear{background:var(--red);color:#fff}
       <label>Date format for RR14<select name="dateFormat"><option value="dmy">DD.MM.YYYY</option><option value="iso">YYYY-MM-DD</option></select></label>
       <label class="wide">List column order (only if the RR14 list returns rows as arrays)<input name="readColumns" placeholder="Bib,Firstname,Lastname,Team,Sex,Nation,DateOfBirth,AgeGroup.Name,TShirt,QID,Email,Phone,ICEName,ICEPhone"></label>
     </div>
-    <p class="small">Sync with RR14 runs every 30 seconds for the active event.</p>
+    <p class="small">Sync with RR14 runs every 30 seconds for every open event.</p>
     <div class="acts" style="justify-content:flex-start"><button type="button" class="ghost" id="syncNow">Sync from RR14 now</button><button type="button" class="ghost" id="retryRR">Retry failed RR14 writes</button></div>
     <h4>Signatures</h4>
     <p class="sub" style="margin:0 0 8px">Saved as PNG in Supabase Storage (private). RR14 gets a link that opens the signature.</p>
@@ -344,7 +353,7 @@ body.settings #gear{background:var(--red);color:#fff}
 "use strict";
 {
 let syncState=null,EV=null;
-const APP_VERSION="1.2";
+const APP_VERSION="1.3";
 const SIZES=["XS","S","M","L","XL","XXL"];
 const FIELDS=[["dob","Date of birth",'type="date"'],["nat","Nation",'maxlength="3" autocapitalize="characters" placeholder="CRO"'],["qid","QID",'inputmode="numeric"'],["ice","ICE person",'placeholder="Emergency contact name"'],["icePhone","ICE phone",'type="tel" placeholder="+974…"'],["email","Email",'type="email" placeholder="name@example.com"'],["phone","Phone",'type="tel" placeholder="+974…"']];
 const FK=FIELDS.map(f=>f[0]);
@@ -389,24 +398,32 @@ const BUCKET="checkin-signatures";
 const fromRow=r=>({bib:r.bib,first:r.first_name||"",last:r.last_name||"",team:r.team||"",sex:r.sex||"",nat:r.nation||"",dob:r.dob||"",ageGroup:r.age_group||"",size:r.shirt_size||"",qid:r.qid||"",email:r.email||"",phone:r.phone||"",ice:r.ice_name||"",icePhone:r.ice_phone||"",sigId:r.sig_id,sigTime:r.sig_time,sigUrl:r.sig_url,scope:r.pickup_scope,by:r.collected_by,desk:r.checkin_device,qv:r.qatari_verified,merch:!!r.package_issued,merchTime:r.package_time,merchDesk:r.package_device});
 async function rpc(fn,args){const{data,error}=await sb.rpc(fn,args);if(error)throw new Error(error.message);return data}
 const RR={
-  async edit(bib,fields){await rpc("checkin_edit",{p_bib:bib,p_fields:fields});Object.assign(byBib(bib),fields)},
+  async edit(bib,fields){await rpc("checkin_edit",{p_event:EV.id,p_bib:bib,p_fields:fields});Object.assign(byBib(bib),fields)},
   async upload(id,png){const blob=await(await fetch(png)).blob();const{error}=await sb.storage.from(BUCKET).upload(EV.id+"/"+id+".png",blob,{contentType:"image/png",upsert:true});if(error)throw new Error("Signature upload failed: "+error.message)},
   collect:a=>rpc("checkin_collect",a),
-  async undo(id){await rpc("checkin_undo",{p_sig_id:id})},
-  async issue(id,on){await rpc("checkin_issue",{p_sig_id:id,p_on:on,p_device:device||"unknown"})},
+  async undo(id){await rpc("checkin_undo",{p_event:EV.id,p_sig_id:id})},
+  async issue(id,on){await rpc("checkin_issue",{p_event:EV.id,p_sig_id:id,p_on:on,p_device:device||"unknown"})},
   async sig(id){const{data}=await sb.storage.from(BUCKET).createSignedUrl(EV.id+"/"+id+".png",300);return data&&data.signedUrl}
 };
 async function loadAll(){if(!EV){P=[];return}const out=[];for(let i=0;;i+=1000){const{data,error}=await sb.from("checkin_participants").select("*").eq("event_id",EV.id).order("bib").range(i,i+999);if(error)throw error;out.push(...data);if(data.length<1000)break}P=out.map(fromRow)}
-let evReload=false,evBoot=false;
-function applyEvent(r){if(!r)return;
-  if(r.active===false){if(EV&&r.id===EV.id){evReload=true;reloadWhenIdle()}return}
-  if(EV&&r.id!==EV.id){evReload=true;reloadWhenIdle();return}
-  if(!EV&&evBoot&&r.active){evReload=true;reloadWhenIdle();return}
-  EV={id:r.id,name:r.name};const v=r.settings||{};cfg={...v,map:{...MAP_DEF,...(v.map||{})}};syncState=r.sync||null;
+let evReload=false,evBoot=false,EVOPEN=[];
+function useEvent(r){EV={id:r.id,name:r.name};const v=r.settings||{};cfg={...v,map:{...MAP_DEF,...(v.map||{})}};syncState=r.sync||null;
   $("evName").textContent=r.name;document.title=r.name+" · Check-in";
   if(document.body.classList.contains("settings"))renderSync();soon()}
-async function loadCfg(){const{data,error}=await sb.from("checkin_events").select("id,name,active,settings,sync").eq("active",true).maybeSingle();if(error)throw error;
-  if(data)applyEvent(data);else{EV=null;$("evName").textContent="No active event"}}
+function applyEvent(r){if(!r||!r.id)return;
+  const i=EVOPEN.findIndex(e=>e.id===r.id);if(r.open){if(i<0)EVOPEN.push(r);else EVOPEN[i]=r}else if(i>=0)EVOPEN.splice(i,1);
+  if($("evOv").classList.contains("on"))showEvents();
+  if(EV&&r.id===EV.id){if(!r.open){ls.set("ck_event","");evReload=true;reloadWhenIdle()}else useEvent(r)}}
+async function loadCfg(){const{data,error}=await sb.from("checkin_events").select("id,name,open,active,settings,sync").order("created_at",{ascending:false});if(error)throw error;
+  EVOPEN=(data||[]).filter(e=>e.open);const saved=ls.get("ck_event");
+  const pick=EVOPEN.find(e=>e.id===saved)||(EVOPEN.length===1?EVOPEN[0]:null);
+  if(pick){ls.set("ck_event",pick.id);useEvent(pick)}else{EV=null;$("evName").textContent=EVOPEN.length?"Pick event":"No event"}}
+function showEvents(){$("evPick").innerHTML=EVOPEN.length?EVOPEN.map(e=>`<button data-ev="${esc(e.id)}" aria-pressed="${!!EV&&EV.id===e.id}" style="font-size:24px">${esc(e.name)}</button>`).join(""):'<p class="sub">No open event. The RBP admin creates one in Settings → Events.</p>';
+  $("evPickMsg").textContent=""}
+function askEvent(){showEvents();$("evOv").classList.add("on")}
+$("evPick").onclick=e=>{const b=e.target.closest("[data-ev]");if(!b)return;if(EV&&b.dataset.ev===EV.id){$("evOv").classList.remove("on");return}
+  ls.set("ck_event",b.dataset.ev);ss.set("ck_draft",null);location.reload()};
+$("evName").onclick=()=>{if(sel&&$("cv")&&ink){$("qrmsg").textContent="Finish or clear the open signature first.";return}askEvent()};
 const idle=()=>!(sel&&$("cv"))&&!document.querySelector(".ov.on")&&!document.body.classList.contains("settings");
 function reloadWhenIdle(){if(idle())location.reload();else setTimeout(reloadWhenIdle,3000)}
 let rt=0;function soon(){clearTimeout(rt);rt=setTimeout(()=>{if(sel&&$("cv")&&!["merch","stats"].includes(location.hash.slice(1))){renderList();return}render()},120)}
@@ -482,21 +499,24 @@ async function renderSync(){const box=$("syncBox"),rb=$("rrBox");if(!box||!sb)re
 let EVS=[];
 async function renderEvents(){const box=$("evList");box.innerHTML='<p class="sub">Loading…</p>';
   try{EVS=(await admin("listEvents")).events||[]}catch(e){box.innerHTML=`<p class="note warn">${esc(e.message)}</p>`;return}
-  box.innerHTML=EVS.length?EVS.map(e=>`<div class="evrow"><b>${esc(e.name)}</b>${e.active?'<span class="on">Active</span>':""}<span class="sub">${esc(e.id)} · ${e.participants} participants · read ${e.list?esc(e.list):"<i>not set</i>"} · write ${e.write?esc(e.write):"<i>not set</i>"}</span>${e.active?"":`<button type="button" class="ghost" data-act="${esc(e.id)}">Make active</button>`}</div>`).join(""):'<p class="note warn">No events yet. Create the first one below.</p>';
-  const a=EVS.find(e=>e.active),f=$("setForm");f.elements.evList.placeholder=a&&a.list?"Stored: "+a.list:"https://…";f.elements.evWrite.placeholder=a&&a.write?"Stored: "+a.write:"https://…";
+  box.innerHTML=EVS.length?EVS.map(e=>{const here=EV&&EV.id===e.id;return `<div class="evrow"><b>${esc(e.name)}</b>${e.open?'<span class="on">Open</span>':'<span class="sub" style="flex:none">Closed</span>'}${here?'<span class="on" style="background:var(--ink)">This iPad</span>':""}<span class="sub">${esc(e.id)} · ${e.participants} participants · read ${e.list?esc(e.list):"<i>not set</i>"} · write ${e.write?esc(e.write):"<i>not set</i>"}</span>${e.open&&!here?`<button type="button" class="ghost" data-use="${esc(e.id)}">Use on this iPad</button>`:""}<button type="button" class="ghost" data-open="${esc(e.id)}" data-to="${e.open?0:1}">${e.open?"Close":"Open"}</button></div>`}).join(""):'<p class="note warn">No events yet. Create the first one below.</p>';
+  const a=EV&&EVS.find(e=>e.id===EV.id),f=$("setForm");f.elements.evList.placeholder=a&&a.list?"Stored: "+a.list:"https://…";f.elements.evWrite.placeholder=a&&a.write?"Stored: "+a.write:"https://…";
   $("rrLinks").hidden=$("evSaveLinks").hidden=!a}
-$("evList").onclick=async e=>{const b=e.target.closest("[data-act]");if(!b)return;const ev=EVS.find(x=>x.id===b.dataset.act);
-  if(b.dataset.sure!=="1"){b.dataset.sure="1";b.textContent=`Switch every iPad to ${ev?ev.name:"this event"}?`;return}
-  b.disabled=true;b.textContent="Switching…";try{await admin("setActive",{eventId:b.dataset.act});$("evMsg").textContent="Switched. Every iPad loads the new event when it is free."}catch(err){$("evMsg").textContent=err.message}renderEvents()};
+$("evList").onclick=async e=>{const u=e.target.closest("[data-use]"),o=e.target.closest("[data-open]");
+  if(u){ls.set("ck_event",u.dataset.use);ss.set("ck_draft",null);location.reload();return}
+  if(!o)return;const ev=EVS.find(x=>x.id===o.dataset.open),open=o.dataset.to==="1";
+  if(!open&&o.dataset.sure!=="1"){o.dataset.sure="1";o.textContent=`Close ${ev?ev.name:"event"} on every iPad?`;return}
+  o.disabled=true;try{await admin("setOpen",{eventId:o.dataset.open,value:open});$("evMsg").textContent=open?"Event open. iPads can pick it.":"Event closed. iPads on it are asked to pick another event."}catch(err){$("evMsg").textContent=err.message}renderEvents()};
 $("evNewBtn").onclick=()=>{$("evNew").hidden=!$("evNew").hidden};
 $("evSaveLinks").onclick=async()=>{const f=$("setForm"),l=f.elements.evList.value.trim(),w=f.elements.evWrite.value.trim(),m=$("evMsg");
   if(!l&&!w){m.textContent="Paste a link first.";return}
-  try{await admin("saveEvent",{listUrl:l||undefined,writeUrl:w||undefined});f.elements.evList.value=f.elements.evWrite.value="";m.textContent="RR14 links saved.";renderEvents()}catch(err){m.textContent=err.message}};
+  try{await admin("saveEvent",{eventId:EV&&EV.id,listUrl:l||undefined,writeUrl:w||undefined});f.elements.evList.value=f.elements.evWrite.value="";m.textContent="RR14 links saved.";renderEvents()}catch(err){m.textContent=err.message}};
 $("setForm").addEventListener("input",e=>{if(e.target.name==="newEvName"){const i=$("setForm").elements.newEvId;if(!i.dataset.touched)i.value=norm(e.target.value).replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"").slice(0,40)}if(e.target.name==="newEvId")e.target.dataset.touched="1"});
 $("evCreate").onclick=async()=>{const f=$("setForm").elements,m=$("evMsg"),b=$("evCreate");b.disabled=true;
-  try{const r=await admin("createEvent",{name:f.newEvName.value.trim(),eventId:f.newEvId.value.trim(),listUrl:f.newEvList.value.trim(),writeUrl:f.newEvWrite.value.trim(),copy:f.newEvCopy.checked});
+  const newId=f.newEvId.value.trim().toLowerCase();
+  try{const r=await admin("createEvent",{name:f.newEvName.value.trim(),eventId:newId,listUrl:f.newEvList.value.trim(),writeUrl:f.newEvWrite.value.trim(),copy:f.newEvCopy.checked,copyFrom:EV&&EV.id});
     for(const k of["newEvName","newEvId","newEvList","newEvWrite"])f[k].value="";delete f.newEvId.dataset.touched;$("evNew").hidden=true;
-    m.textContent=r.active?"Event created and active.":"Event created. Make it active when you want the iPads to use it.";renderEvents();if(r.active)loadCfg().then(()=>loadAll()).then(soon)}
+    m.textContent="Event created and open. iPads can pick it now.";renderEvents();if(!EV){ls.set("ck_event",newId);evReload=true}}
   catch(err){m.textContent=err.message}finally{b.disabled=false}};
 function closeSettings(){$("setOv").classList.remove("on");document.body.classList.remove("settings");if(evReload)reloadWhenIdle()}
 /* ---- admin gate: settings are central, only the RBP admin opens them ---- */
@@ -523,7 +543,7 @@ $("loginForm").onsubmit=async e=>{e.preventDefault();const f=e.target,m=$("login
   $("loginOv").classList.remove("on");if(loginFor==="dup"){await takeDup(dupBase);return}
   openSettings()};
 $("syncNow").onclick=async e=>{const b=e.currentTarget;b.disabled=true;b.textContent="Syncing…";try{const r=await admin("syncNow"),x=(r.events&&EV&&r.events[EV.id])||r;syncState=x;renderSync();b.textContent=x.ok?"Synced":"Sync failed, see above"}catch(err){b.textContent=err.message}setTimeout(()=>{b.disabled=false;b.textContent="Sync from RR14 now"},3000)};
-$("retryRR").onclick=async e=>{const b=e.currentTarget;b.disabled=true;try{await admin("retryOutbox");b.textContent="Queued again"}catch(err){b.textContent=err.message}setTimeout(()=>{b.disabled=false;b.textContent="Retry failed RR14 writes"},3000)};
+$("retryRR").onclick=async e=>{const b=e.currentTarget;b.disabled=true;try{await admin("retryOutbox",{eventId:EV&&EV.id});b.textContent="Queued again"}catch(err){b.textContent=err.message}setTimeout(()=>{b.disabled=false;b.textContent="Retry failed RR14 writes"},3000)};
 $("pinBtn").onclick=async()=>{const i=$("setForm").elements.newPin,m=$("adminMsg");if(i.value.length<4){m.textContent="Use at least 4 characters or digits.";return}
   try{await admin("changePin",{pin:i.value});i.value="";m.textContent="PIN changed for every device."}catch(err){m.textContent=err.message}};
 $("signOut").onclick=async()=>{await release(device);ls.set("ck_device","");try{await sb.auth.signOut()}catch(e){}location.reload()};
@@ -547,7 +567,7 @@ $("setForm").onsubmit=async e=>{e.preventDefault();const f=e.target,n={map:{}};
   n.colors=readCols();n.stock=readStock();
   for(const el of f.elements){if(!el.name||el.name.startsWith("col_")||el.dataset.skip!==undefined)continue;if(el.name.startsWith("map_"))n.map[el.name.slice(4)]=el.value.trim()||MAP_DEF[el.name.slice(4)];else if(el.type==="checkbox")n[el.name]=el.checked;else n[el.name]=el.value.trim()}
   if(!EV){alertBox("Create or pick an event first.");return}
-  try{await admin("saveConfig",{value:n})}catch(err){alertBox("Settings not saved: "+err.message);return}
+  try{await admin("saveConfig",{eventId:EV.id,value:n})}catch(err){alertBox("Settings not saved: "+err.message);return}
   cfg={...n,map:{...MAP_DEF,...n.map}};
   closeSettings();if(sel&&!ink){const p=byBib(sel);if($("card"))$("card").outerHTML=bibCard(p)}render()};
 
@@ -632,7 +652,7 @@ async function doConfirm(cv){
     await RR.upload(sigId,exportSig(cv));
     const sc=!p.team?"SOLO":covered.length===1&&covered[0]===p.bib?"SELF":"TEAM",qv={};
     covered.forEach(b=>qv[b]=QV[qidCheck(byBib(b)).s]);
-    await RR.collect({p_collector:p.bib,p_bibs:covered,p_sig_id:sigId,p_path:EV.id+"/"+sigId+".png",p_link_base:CONF.supabaseUrl.replace(/\/$/,"")+"/functions/v1/checkin-sig",p_device:device||"unknown",p_scope:sc,p_qv:qv});
+    await RR.collect({p_event:EV.id,p_collector:p.bib,p_bibs:covered,p_sig_id:sigId,p_path:EV.id+"/"+sigId+".png",p_link_base:CONF.supabaseUrl.replace(/\/$/,"")+"/functions/v1/checkin-sig",p_device:device||"unknown",p_scope:sc,p_qv:qv});
     const now=new Date().toISOString();covered.forEach(b=>Object.assign(byBib(b),{sigId,sigTime:now,by:p.bib,scope:sc,desk:device||"unknown",qv:qv[b]}));
     lastRR=`<div class="note">${esc(fullName(p))} collected ${covered.length>1?covered.length+" bibs ("+covered.map(b=>"#"+b).join(", ")+")":"the bib"}. Sent to the package desk and to RR14.</div>`;
     sel=null;ss.set("ck_draft",null);$("q").value="";$("q").focus();render();
@@ -703,8 +723,8 @@ $("ver").textContent="v"+APP_VERSION;showDevice();route();
 let started=false,subOnce=false;
 async function start(){if(started)return;started=true;$("mode").textContent="Connecting…";
   try{await loadCfg();await loadAll();evBoot=true}catch(e){started=false;$("mode").textContent="Cannot load data, retrying";setTimeout(start,5000);return}
-  render();if(!device)askDevice();watchDevices();restoreDraft();
-  if(!EV){lastRR='<div class="note warn">No active event yet. The RBP admin creates one in Settings → Events.</div>';render()}
+  render();watchDevices();
+  if(!EV){lastRR='<div class="note warn">Pick the event this iPad works on.</div>';render();askEvent()}else{if(!device)askDevice();restoreDraft()}
   sb.channel("checkin")
     .on("postgres_changes",{event:"*",schema:"public",table:"checkin_participants",...(EV?{filter:"event_id=eq."+EV.id}:{})},pl=>{if(pl.eventType==="DELETE"){P=P.filter(p=>p.bib!==(pl.old||{}).bib)}else{const n=fromRow(pl.new),i=P.findIndex(p=>p.bib===n.bib);if(i<0)P.push(n);else P[i]=n}soon()})
     .on("postgres_changes",{event:"*",schema:"public",table:"checkin_devices"},()=>loadDevs())

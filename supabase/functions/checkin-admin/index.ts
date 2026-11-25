@@ -33,7 +33,7 @@ Deno.serve(async (req) => {
   const { data: who } = await sb.auth.getUser(jwt);
   if (!who?.user) return json({ error: "Sign in first." }, 401);
 
-  const { action, pin, token, value, deviceId, eventId, name, listUrl, writeUrl, copy } = await req.json().catch(() => ({}));
+  const { action, pin, token, value, deviceId, eventId, name, listUrl, writeUrl, copy, copyFrom } = await req.json().catch(() => ({}));
   const { data: row } = await sb.from("checkin_secret").select("pin_hash").maybeSingle();
   const hash = row?.pin_hash as string | null;
 
@@ -61,7 +61,7 @@ Deno.serve(async (req) => {
     return error ? json({ error: error.message }, 500) : json({ ok: true });
   }
   if (action === "listEvents") {
-    const { data: evs } = await sb.from("checkin_events").select("id, name, active, created_at, sync").order("created_at", { ascending: false });
+    const { data: evs } = await sb.from("checkin_events").select("id, name, active, open, created_at, sync").order("created_at", { ascending: false });
     const { data: rr } = await sb.from("checkin_event_rr").select("*");
     const counts = await Promise.all((evs ?? []).map(async (e) =>
       (await sb.from("checkin_participants").select("bib", { count: "exact", head: true }).eq("event_id", e.id)).count ?? 0));
@@ -76,9 +76,10 @@ Deno.serve(async (req) => {
     if (!String(name ?? "").trim()) return json({ error: "Give the event a name." }, 400);
     if (!okUrl(listUrl) || !okUrl(writeUrl)) return json({ error: "RR14 links must start with https://" }, 400);
     const cur = await active();
-    // Copy colours, field names, slogan and date format from the active event; stock starts empty.
-    const base = copy && cur ? { ...(cur.settings ?? {}), stock: {} } : {};
-    const { error } = await sb.from("checkin_events").insert({ id, name: String(name).trim(), settings: base, active: !cur });
+    const src = copyFrom ? (await sb.from("checkin_events").select("settings").eq("id", copyFrom).maybeSingle()).data : cur;
+    // Copy colours, field names, slogan and date format from the chosen event; stock starts empty.
+    const base = copy && src ? { ...(src.settings ?? {}), stock: {} } : {};
+    const { error } = await sb.from("checkin_events").insert({ id, name: String(name).trim(), settings: base, active: !cur, open: true });
     if (error) return json({ error: error.code === "23505" ? "That event ID already exists." : error.message }, 400);
     await sb.from("checkin_event_rr").upsert({ event_id: id, list_url: listUrl || null, write_url: writeUrl || null });
     return json({ ok: true, active: !cur });
@@ -88,6 +89,10 @@ Deno.serve(async (req) => {
     if (!e) return json({ error: "No such event" }, 404);
     await sb.from("checkin_events").update({ active: false }).eq("active", true);
     const { error } = await sb.from("checkin_events").update({ active: true }).eq("id", eventId);
+    return error ? json({ error: error.message }, 500) : json({ ok: true });
+  }
+  if (action === "setOpen") {
+    const { error } = await sb.from("checkin_events").update({ open: !!value }).eq("id", eventId);
     return error ? json({ error: error.message }, 500) : json({ ok: true });
   }
   if (action === "saveEvent") {
@@ -119,7 +124,7 @@ Deno.serve(async (req) => {
     return json(await r.json().catch(() => ({ ok: false, error: `sync ${r.status}` })));
   }
   if (action === "retryOutbox") {
-    const ev = (await active())?.id;
+    const ev = eventId || (await active())?.id;
     await sb.from("checkin_outbox").update({ attempts: 0 }).eq("event_id", ev).is("sent_at", null);
     return json({ ok: true });
   }

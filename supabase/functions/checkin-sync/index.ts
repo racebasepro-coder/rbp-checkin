@@ -1,6 +1,6 @@
 // checkin-sync: pushes queued writes to RR14, then pulls the participant list.
 // Runs every 30 s (pg_cron, see README) and on "Sync from RR14 now" in Settings.
-// Works per event: the active event is pushed and pulled; other events with unsent writes are pushed only.
+// Works per event: every open event is pushed and pulled; closed events with unsent writes are pushed only.
 // RR14 links come from checkin_event_rr (entered by the RBP admin in Settings -> Events).
 import { createClient } from "npm:@supabase/supabase-js@2";
 
@@ -141,13 +141,13 @@ async function allowed(req: Request) {
 Deno.serve(async (req) => {
   if (!(await allowed(req))) return new Response("Forbidden", { status: 403 });
   const mode = new URL(req.url).searchParams.get("mode") ?? "both";
-  const { data: events } = await sb.from("checkin_events").select("id, active, settings, sync");
+  const { data: events } = await sb.from("checkin_events").select("id, active, open, settings, sync");
   const { data: open } = await sb.from("checkin_outbox").select("event_id").is("sent_at", null).limit(5000);
   const pending = new Set((open ?? []).map((r) => r.event_id));
   const out: Record<string, unknown> = {};
   let ok = true;
   for (const e of events ?? []) {
-    if (e.active) out[e.id] = await syncEvent(e, mode);
+    if (e.open || e.active) out[e.id] = await syncEvent(e, mode);
     else if (pending.has(e.id)) out[e.id] = await syncEvent(e, "push");
     if (out[e.id] && !(out[e.id] as any).ok) ok = false;
   }
