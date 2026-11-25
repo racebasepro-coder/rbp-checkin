@@ -289,6 +289,15 @@ body.settings #gear{background:var(--red);color:#fff}
   </form>
 </div>
 
+<div class="ov" id="qrOv" role="dialog" aria-modal="true" aria-labelledby="qrH">
+  <div class="sheet" style="width:min(520px,100%);text-align:center">
+    <h2 id="qrH">Add an iPad</h2>
+    <p class="sub" id="qrSub"></p>
+    <div id="qrImg" style="background:#fff;padding:18px;border-radius:14px;display:inline-block;margin:10px 0;line-height:0"></div>
+    <p class="small" id="qrTxt"></p>
+    <div class="acts" style="justify-content:center"><button type="button" class="ghost" id="qrCopy">Copy link</button><button type="button" class="pri" id="qrClose">Done</button></div>
+  </div>
+</div>
 <div class="ov" id="authOv" role="dialog" aria-modal="true" aria-labelledby="authH">
   <form class="sheet" id="authForm" style="width:min(440px,100%)">
     <h2 id="authH">Set up this iPad</h2>
@@ -367,7 +376,7 @@ body.settings #gear{background:var(--red);color:#fff}
 "use strict";
 {
 let syncState=null,EV=null;
-const APP_VERSION="1.3.8";
+const APP_VERSION="1.3.9";
 const SIZES=["XS","S","M","L","XL","XXL"];
 const FIELDS=[["dob","Date of birth",'type="date"'],["nat","Nation",'maxlength="3" autocapitalize="characters" placeholder="CRO"'],["qid","QID",'inputmode="numeric"'],["ice","ICE person",'placeholder="Emergency contact name"'],["icePhone","ICE phone",'type="tel" placeholder="+974…"'],["email","Email",'type="email" placeholder="name@example.com"'],["phone","Phone",'type="tel" placeholder="+974…"']];
 const FK=FIELDS.map(f=>f[0]);
@@ -511,12 +520,26 @@ async function renderSync(){const box=$("syncBox"),rb=$("rrBox");if(!box||!sb)re
       (R.length?`<div class="scroll"><table class="stack"><thead><tr><th>Time</th><th>Bib</th><th>Device</th><th>File</th><th>RR14</th></tr></thead><tbody>${R.map(g=>{const L=lbl[g.s],by=byBib(g.collector);return `<tr><td class="n">${fmt(g.created_at)}</td><td>#${g.collector}${g.bibs.length>1?` +${g.bibs.length-1}`:""} ${by?esc(fullName(by)):""}</td><td>${esc(g.device||"")}</td><td style="color:var(--ok);font-weight:700">✓ Saved</td><td style="color:${L[2]};font-weight:700">${L[0]} ${L[1]}</td></tr>`}).join("")}</tbody></table></div>`:'<p class="sub">No signatures yet.</p>');
   }catch(e){box.innerHTML='<p class="note warn">Could not read the signature list.</p>'}}
 let EVS=[];
+/* Setup QR: a new iPad scans it with the Camera app and opens the check-in already signed in, on this event. */
+let qrLink="";
+function loadQRLib(){return window.qrcode?Promise.resolve():new Promise((ok,no)=>{const sc=document.createElement("script");sc.src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js";sc.onload=ok;sc.onerror=()=>no(new Error("Could not load the QR maker"));document.head.appendChild(sc)})}
+async function showSetupQR(ev){if(!ev)return;$("qrH").textContent="Add an iPad: "+ev.name;$("qrSub").textContent="Making the code…";$("qrImg").innerHTML="";$("qrTxt").textContent="";$("qrOv").classList.add("on");
+  try{const[r]=await Promise.all([admin("setupCode"),loadQRLib()]);
+    qrLink=location.origin+location.pathname+"?setup="+encodeURIComponent(r.code)+"&ev="+encodeURIComponent(ev.id);
+    const q=qrcode(0,"M");q.addData(qrLink);q.make();$("qrImg").innerHTML=q.createSvgTag({cellSize:7,margin:0,scalable:true});const sv=$("qrImg").querySelector("svg");if(sv){sv.style.width="300px";sv.style.height="300px"}
+    const until=new Date(Date.now()+r.ttl).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"});
+    $("qrSub").textContent="Point the new iPad's Camera app at this code and tap the link. It opens the check-in signed in, on this event; then pick the tablet.";
+    $("qrTxt").textContent=`Works on any number of iPads until ${until}. Anyone with the code can sign in until then, so don't share it.`}
+  catch(e){$("qrSub").textContent=e.message}}
+$("qrClose").onclick=()=>{$("qrOv").classList.remove("on");$("qrImg").innerHTML="";qrLink=""};
+$("qrCopy").onclick=async e=>{const b=e.currentTarget;try{await navigator.clipboard.writeText(qrLink);b.textContent="Copied"}catch(err){b.textContent="Copy failed"}setTimeout(()=>b.textContent="Copy link",2000)};
 async function renderEvents(){const box=$("evList");box.innerHTML='<p class="sub">Loading…</p>';
   try{EVS=(await admin("listEvents")).events||[]}catch(e){box.innerHTML=`<p class="note warn">${esc(e.message)}</p>`;return}
-  box.innerHTML=EVS.length?EVS.map(e=>{const here=EV&&EV.id===e.id;return `<div class="evrow"><b>${esc(e.name)}</b>${e.open?'<span class="on">Open</span>':'<span class="sub" style="flex:none">Closed</span>'}${here?'<span class="on" style="background:var(--ink)">This iPad</span>':""}<span class="sub">${esc(e.id)} · ${e.participants} participants · read ${e.list?esc(e.list):"<i>not set</i>"} · write ${e.write?esc(e.write):"<i>not set</i>"}</span>${e.open&&!here?`<button type="button" class="ghost" data-use="${esc(e.id)}">Use on this iPad</button>`:""}<button type="button" class="ghost" data-open="${esc(e.id)}" data-to="${e.open?0:1}">${e.open?"Close":"Open"}</button></div>`}).join(""):'<p class="note warn">No events yet. Create the first one below.</p>';
+  box.innerHTML=EVS.length?EVS.map(e=>{const here=EV&&EV.id===e.id;return `<div class="evrow"><b>${esc(e.name)}</b>${e.open?'<span class="on">Open</span>':'<span class="sub" style="flex:none">Closed</span>'}${here?'<span class="on" style="background:var(--ink)">This iPad</span>':""}<span class="sub">${esc(e.id)} · ${e.participants} participants · read ${e.list?esc(e.list):"<i>not set</i>"} · write ${e.write?esc(e.write):"<i>not set</i>"}</span>${e.open?`<button type="button" class="ghost" data-qr="${esc(e.id)}">Setup QR for new iPads</button>`:""}${e.open&&!here?`<button type="button" class="ghost" data-use="${esc(e.id)}">Use on this iPad</button>`:""}<button type="button" class="ghost" data-open="${esc(e.id)}" data-to="${e.open?0:1}">${e.open?"Close":"Open"}</button></div>`}).join(""):'<p class="note warn">No events yet. Create the first one below.</p>';
   const a=EV&&EVS.find(e=>e.id===EV.id),f=$("setForm");f.elements.evList.placeholder=a&&a.list?"Stored: "+a.list:"https://…";f.elements.evWrite.placeholder=a&&a.write?"Stored: "+a.write:"https://…";
   $("rrLinks").hidden=$("evSaveLinks").hidden=!a}
-$("evList").onclick=async e=>{const u=e.target.closest("[data-use]"),o=e.target.closest("[data-open]");
+$("evList").onclick=async e=>{const u=e.target.closest("[data-use]"),o=e.target.closest("[data-open]"),qb=e.target.closest("[data-qr]");
+  if(qb){showSetupQR(EVS.find(x=>x.id===qb.dataset.qr));return}
   if(u){ls.set("ck_event",u.dataset.use);ss.set("ck_draft",null);location.reload();return}
   if(!o)return;const ev=EVS.find(x=>x.id===o.dataset.open),open=o.dataset.to==="1";
   if(!open&&o.dataset.sure!=="1"){o.dataset.sure="1";o.textContent=`Close ${ev?ev.name:"event"} on every iPad?`;return}
@@ -796,7 +819,17 @@ else{
     $("authBtn").disabled=false;if(error){$("authMsg").textContent=/invalid/i.test(error.message)?"Wrong PIN or password.":error.message;f.elements.password.value="";return}
     $("authOv").classList.remove("on");start()};
   $("authForm").elements.email.value=CONF.staffEmail||"";
-  sb.auth.getSession().then(({data})=>{if(data&&data.session)start();else{$("mode").textContent="Signed out";$("authOv").classList.add("on");setTimeout(()=>$("authForm").elements.password.focus(),50)}});
+  /* Opened from a setup QR: remember the event, sign in with the one-time code, then clean the address. */
+  const qs=new URLSearchParams(location.search),setup=qs.get("setup");
+  const enroll=async()=>{if(!setup)return;const evq=qs.get("ev");if(evq){ls.set("ck_event",evq);ss.set("ck_draft",null)}
+    history.replaceState(null,"",location.pathname+location.hash);
+    const{data:cur}=await sb.auth.getSession();if(cur&&cur.session)return;
+    $("mode").textContent="Setting up this iPad…";
+    try{const{data,error}=await sb.functions.invoke("checkin-enroll",{body:{code:setup}});
+      if(error){let m=error.message;try{const j=await error.context.json();if(j&&j.error)m=j.error}catch(x){}throw new Error(m)}
+      let r=await sb.auth.verifyOtp({token_hash:data.token_hash,type:"email"});if(r.error)r=await sb.auth.verifyOtp({token_hash:data.token_hash,type:"magiclink"});if(r.error)throw r.error}
+    catch(e){$("authMsg").textContent=e.message||"Setup QR did not work. Enter the staff PIN."}};
+  enroll().then(()=>sb.auth.getSession()).then(({data})=>{if(data&&data.session)start();else{$("mode").textContent="Signed out";$("authOv").classList.add("on");setTimeout(()=>$("authForm").elements.password.focus(),50)}});
   sb.auth.onAuthStateChange(ev=>{if(ev==="SIGNED_OUT"&&started)location.reload()});
 }
 }

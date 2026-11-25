@@ -19,6 +19,12 @@ async function sign(exp: number) {
   const mac = new Uint8Array(await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(String(exp))));
   return `${exp}.${btoa(String.fromCharCode(...mac))}`;
 }
+// Setup QR codes for new iPads: "<exp>.<HMAC of 'enroll:<exp>'>", checked by checkin-enroll.
+async function enrollCode(exp: number) {
+  const key = await crypto.subtle.importKey("raw", SECRET, { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+  const mac = new Uint8Array(await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(`enroll:${exp}`)));
+  return `${exp}.${btoa(String.fromCharCode(...mac))}`;
+}
 async function valid(token?: string) {
   const [exp] = String(token ?? "").split(".");
   return !!token && Number(exp) > Date.now() && (await sign(Number(exp))) === token;
@@ -127,6 +133,10 @@ Deno.serve(async (req) => {
     const ev = eventId || (await active())?.id;
     await sb.from("checkin_outbox").update({ attempts: 0 }).eq("event_id", ev).is("sent_at", null);
     return json({ ok: true });
+  }
+  if (action === "setupCode") {
+    const ttl = 2 * 60 * 60 * 1000; // a setup QR works for 2 hours, on any number of iPads
+    return json({ code: await enrollCode(Date.now() + ttl), ttl });
   }
   if (action === "removePickup") {
     // A wrong check-in: clears signature and package for the pickup (or one bib of it) and tells RR14.
