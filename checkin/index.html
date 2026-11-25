@@ -43,7 +43,7 @@ button.ghost.danger{color:var(--red);border-color:var(--red)}
 #scanFab{position:fixed;right:226px;bottom:60px;z-index:15;display:flex;align-items:center;gap:10px;min-height:64px;padding:0 24px;border-radius:32px;border:0;background:var(--red);color:#fff;font-weight:700;font-size:19px;box-shadow:0 8px 24px rgba(0,0,0,.35)}
 main{padding-bottom:150px!important}body.mini #scanFab{right:90px}
 /* Safari draws its own X (leave full screen) in the top corner: keep the search bar clear of it */
-body.fs main{padding-top:76px!important}body.fs aside{padding-top:60px}
+body.fs main{padding-top:calc(20px + 5vh)!important}body.fs aside{padding-top:5vh}
 #shirtBibs{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;margin:14px 0 6px}#shirtBibs .bb{font:800 44px/1 "Barlow Condensed",sans-serif;min-width:2.2em}
 #shirtList{display:flex;flex-wrap:wrap;justify-content:center;gap:16px 22px;margin:18px 0 22px}
 #shirtList .ush{display:inline-flex;align-items:baseline;gap:6px;background:#fff;color:#141414;border:4px solid #141414;border-radius:18px;padding:10px 26px 8px;font:800 96px/1 "Barlow Condensed",sans-serif}
@@ -420,7 +420,7 @@ body.settings #gear{background:var(--red);color:#fff}
 "use strict";
 {
 let syncState=null,EV=null;
-const APP_VERSION="1.5.1";
+const APP_VERSION="1.5.2";
 const SIZES=["XS","S","M","L","XL","XXL"];
 const FIELDS=[["dob","Date of birth",'type="date"'],["nat","Nation",'autocapitalize="characters" placeholder="e.g. QATAR"'],["qid","QID",'inputmode="numeric"'],["ice","ICE person",'placeholder="Emergency contact name"'],["icePhone","ICE phone",'type="tel" placeholder="+974…"'],["email","Email",'type="email" placeholder="name@example.com"'],["phone","Phone",'type="tel" placeholder="+974…"']];
 const FK=FIELDS.map(f=>f[0]);
