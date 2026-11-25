@@ -25,6 +25,15 @@ async function enrollCode(exp: number) {
   const mac = new Uint8Array(await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(`enroll:${exp}`)));
   return `${exp}.${btoa(String.fromCharCode(...mac))}`;
 }
+// "3000-3099, 4005, 4010-4020" -> is bib inside?
+function inRanges(txt: string, bib: number) {
+  return txt.split(/[,;\s]+/).some((r) => {
+    const m = r.match(/^(\d+)(?:-(\d+))?$/);
+    if (!m) return false;
+    const a = +m[1], z = m[2] ? +m[2] : a;
+    return bib >= Math.min(a, z) && bib <= Math.max(a, z);
+  });
+}
 async function valid(token?: string) {
   const [exp] = String(token ?? "").split(".");
   return !!token && Number(exp) > Date.now() && (await sign(Number(exp))) === token;
@@ -62,6 +71,18 @@ Deno.serve(async (req) => {
     const B = Number(bib);
     if (!eventId || !Number.isInteger(B) || !fields || typeof fields !== "object") return json({ error: "Pick a bib" }, 400);
     const { error } = await sb.rpc("checkin_change", { p_event: eventId, p_bib: B, p_fields: fields, p_device: String(device ?? "") });
+    return error ? json({ error: error.message }, 400) : json({ ok: true });
+  }
+  // New tab: a new participant on a free bib. The bib must be inside the event's free ranges (Settings).
+  if (action === "add") {
+    const B = Number(bib);
+    if (!eventId || !Number.isInteger(B) || !fields || typeof fields !== "object") return json({ error: "Pick a free bib" }, 400);
+    const { data: ev } = await sb.from("checkin_events").select("settings").eq("id", eventId).maybeSingle();
+    const set = (ev?.settings ?? {}) as Record<string, any>;
+    if (!inRanges(String(set.freeBibs ?? ""), B)) return json({ error: `Bib ${B} is not in this event's free bib ranges` }, 400);
+    const f = { ...fields } as Record<string, unknown>;
+    if (String(set.newContest ?? "").trim()) f.contest = String(set.newContest).trim();
+    const { error } = await sb.rpc("checkin_add", { p_event: eventId, p_bib: B, p_fields: f, p_device: String(device ?? "") });
     return error ? json({ error: error.message }, 400) : json({ ok: true });
   }
   if (!(await valid(token))) return json({ error: "Locked. Enter the RBP admin PIN." }, 401);

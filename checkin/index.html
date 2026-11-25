@@ -248,6 +248,7 @@ body.settings #gear{background:var(--red);color:#fff}
     <a href="#merch" data-v="merch" title="Packages"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 8h14l-1 12H6z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg><span class="lbl">Packages</span></a>
     <a href="#stats" data-v="stats" title="Statistics"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg><span class="lbl">Statistics</span></a>
     <a href="#swap" data-v="swap" title="Change participant"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 4 3 8l4 4M3 8h14M17 20l4-4-4-4M21 16H7"/></svg><span class="lbl">Change</span></a>
+    <a href="#add" data-v="add" title="New participant on a free bib"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="4"/><path d="M2 21c0-4 3-6 7-6s7 2 7 6M19 8v6M16 11h6"/></svg><span class="lbl">New</span></a>
   </nav>
   <div class="foot">
     <button type="button" class="chip lbl" id="evName" title="Change event" style="font-weight:700;opacity:1;background:none;border:0;color:inherit;text-align:left;cursor:pointer;text-decoration:underline dotted"></button>
@@ -281,6 +282,12 @@ body.settings #gear{background:var(--red);color:#fff}
       <h3>Packages issued</h3>
       <div id="hist"></div>
     </div>
+  </section>
+  <section class="view" id="v-add">
+    <h2 style="margin:0 0 4px">New participant</h2>
+    <p class="sub" style="margin:0 0 14px" id="nwInfo"></p>
+    <div class="panel" id="nwBox"></div>
+    <p id="nwMsg" class="small" style="min-height:1.5em"></p>
   </section>
   <section class="view" id="v-swap">
     <h2 style="margin:0 0 4px">Change participant</h2>
@@ -446,6 +453,9 @@ body.settings #gear{background:var(--red);color:#fff}
     <div id="syncBox"><p class="sub">Checking…</p></div>
     <h4>Desks</h4>
     <div class="form"><label class="wide"><span><input type="checkbox" name="oneDesk" style="width:22px;height:22px;vertical-align:middle"> Bib and shirts at one desk: after the signature the shirts to hand over pop up, and there is no separate package desk step</span></label></div>
+    <h4>New participants</h4>
+    <div class="form"><label>Free bibs<input name="freeBibs" placeholder="e.g. 3000-3099, 4005" autocomplete="off"></label><label>RR14 contest ID for them (optional)<input name="newContest" inputmode="numeric" placeholder="e.g. 1" autocomplete="off"></label></div>
+    <p class="sub" style="margin:0 0 8px">The New tab gives out these bibs. They should be empty bibs in RR14.</p>
     <h4>Shirt stock</h4>
     <div class="form"><label>Shirts<select name="shirtMode" id="shirtMode"><option value="gender">Men and women (separate cuts)</option><option value="unisex">Unisex (sizes only)</option></select></label></div>
     <p class="sub" style="margin:0 0 8px">Pieces on hand at the start, used in statistics. Set for this event only.</p>
@@ -475,7 +485,7 @@ body.settings #gear{background:var(--red);color:#fff}
 "use strict";
 {
 let syncState=null,EV=null;
-const APP_VERSION="1.8.1";
+const APP_VERSION="1.9.0";
 const SIZES=["XS","S","M","L","XL","XXL"];
 const FIELDS=[["dob","Date of birth",'type="date"'],["nat","Nation",'autocapitalize="characters" placeholder="e.g. QATAR"'],["qid","QID",'inputmode="numeric"'],["ice","ICE person",'placeholder="Emergency contact name"'],["icePhone","ICE phone",'type="tel" placeholder="+974…"'],["email","Email",'type="email" placeholder="name@example.com"'],["phone","Phone",'type="tel" placeholder="+974…"']];
 const FK=FIELDS.map(f=>f[0]);
@@ -744,7 +754,7 @@ $("setForm").onsubmit=async e=>{e.preventDefault();const f=e.target,n={map:{}};
   closeSettings();if(sel&&!ink){const p=byBib(sel);if($("card"))$("card").outerHTML=bibCard(p)}render()};
 
 /* ---- routing ---- */
-function route(){const h=location.hash.slice(1),v=["checkin","merch","stats","swap"].includes(h)?h:"checkin";
+function route(){const h=location.hash.slice(1),v=["checkin","merch","stats","swap","add"].includes(h)?h:"checkin";
   document.querySelectorAll(".view").forEach(e=>e.classList.toggle("on",e.id==="v-"+v));
   document.querySelectorAll("aside nav a").forEach(a=>a.dataset.v===v?a.setAttribute("aria-current","page"):a.removeAttribute("aria-current"));render()}
 addEventListener("hashchange",()=>{if(document.body.classList.contains("settings"))closeSettings();route()});
@@ -855,22 +865,26 @@ const CHF=[["first","First name",""],["last","Last name",""],["sex","Gender","se
 function chFind(t){t=t.trim().toLowerCase();if(!t)return[];return P.filter(p=>String(p.bib).startsWith(t)||fullName(p).toLowerCase().includes(t)||(p.team||"").toLowerCase().includes(t)).sort((x,y)=>x.bib-y.bib).slice(0,6)}
 function chList(){const q=$("chQ"),cur=chBib&&byBib(chBib),rows=q.value.trim()?chFind(q.value):cur?[cur]:[];
   $("chL").innerHTML=rows.map(p=>`<li><button type="button" data-ch="${p.bib}" ${chBib===p.bib?'style="border-color:var(--red);border-width:3px"':""}><span class="bb" style="${bibStyle(p)}">${p.bib}</span><span class="flag">${flag(p.nat)}</span><span>${esc(fullName(p))}<br><span class="sub">${p.team?esc(p.team):"Solo"}</span></span></button></li>`).join("")||(q.value.trim()?'<li class="sub">No match.</li>':"")}
-function renderSwap(){chList();const p=chBib&&byBib(chBib),box=$("chForm");if(!p){box.hidden=true;box.innerHTML="";box.dataset.bib="";return}
-  // Live sync re-renders this view often: keep a form that is already open so typed values stay.
-  if(box.dataset.bib===String(p.bib)&&$("chF"))return;box.dataset.bib=String(p.bib);
-  box.hidden=false;const val=k=>({first:p.first,last:p.last,sex:p.sex,nat:p.nat,dob:p.dob,qid:p.qid,email:p.email,phone:p.phone,ice:p.ice,icePhone:p.icePhone,size:p.size})[k]||"";
+/* The participant fields (Change and New tabs): name, gender, nation list, date of birth, QID, contacts, ICE, shirt. */
+function chFields(val){
   const inp=([k,l,a])=>a==="sel"?`<label>${l}<select name="${k}"><option value="M" ${val(k)==="M"?"selected":""}>Men</option><option value="W" ${val(k)==="W"?"selected":""}>Women</option></select></label>`
     :a==="nat"?`<label>${l}<select name="${k}"><option value="">–</option>${(()=>{const L=natOpts(),cur=String(val(k)).toUpperCase(),ci=natIso(cur);if(cur&&!L.some(o=>o.n===cur||o.i===ci))L.unshift({i:"",n:cur});return L.map(o=>`<option value="${esc(o.n)}" data-i="${o.i}" ${o.n===cur||(!L.some(x=>x.n===cur)&&ci&&o.i===ci)?"selected":""}>${o.i?flag(o.n)+" ":""}${esc(o.n)}</option>`).join("")})()}</select></label>`
     :a==="size"?`<label>${l}<select name="${k}">${[...new Set([...SIZES,val(k)].filter(Boolean))].map(z=>`<option ${z===val(k)?"selected":""}>${esc(z)}</option>`).join("")}</select></label>`
     :`<label>${l}<input name="${k}" ${a} value="${esc(val(k))}"></label>`;
+  return CHF.map(inp).join("")}
+function renderSwap(){chList();const p=chBib&&byBib(chBib),box=$("chForm");if(!p){box.hidden=true;box.innerHTML="";box.dataset.bib="";return}
+  // Live sync re-renders this view often: keep a form that is already open so typed values stay.
+  if(box.dataset.bib===String(p.bib)&&$("chF"))return;box.dataset.bib=String(p.bib);
+  box.hidden=false;const val=k=>({first:p.first,last:p.last,sex:p.sex,nat:p.nat,dob:p.dob,qid:p.qid,email:p.email,phone:p.phone,ice:p.ice,icePhone:p.icePhone,size:p.size})[k]||"";
+
   box.innerHTML=`<h3>New person on bib ${p.bib}</h3><p class="sub">Now: <b>${esc(fullName(p))}</b>${p.team?" · "+esc(p.team):""}. Change what is different; fields you leave as they are stay.</p>
   <div class="acts" style="justify-content:flex-start;margin-bottom:14px"><button type="button" class="ghost" id="chScan">Photograph QID (front and back)</button><span class="small" id="chPhotos"></span></div>
-  <form class="form" id="chF" onsubmit="return false">${CHF.map(inp).join("")}</form>
+  <form class="form" id="chF" onsubmit="return false">${chFields(val)}</form>
   <div class="acts"><button type="button" class="ghost" id="chCancel">Cancel</button><button type="button" class="pri" id="chSave">Save change</button></div>`;
   $("chScan").onclick=()=>openQid(p.bib);
   $("chCancel").onclick=()=>{chBib=null;qidReset();$("chQ").value="";renderSwap()};
   $("chSave").onclick=chSave;chPhotoNote()}
-function chPhotoNote(){const n=(qid.f?1:0)+(qid.b?1:0),e=$("chPhotos");if(e)e.textContent=n?`${n} QID photo${n>1?"s":""} ready, saved with the change.`:""}
+function chPhotoNote(){const n=(qid.f?1:0)+(qid.b?1:0);["chPhotos","nwPhotos"].forEach(id=>{const e=$(id);if(e)e.textContent=n?`${n} QID photo${n>1?"s":""} ready, saved with the participant.`:""})}
 async function chSave(e){const b=e.currentTarget,p=byBib(chBib),F=$("chF"),v=k=>F.elements[k].value.trim(),m=$("chMsg");
   const cur={first:p.first,last:p.last,sex:p.sex,nat:p.nat,dob:p.dob,qid:p.qid,email:p.email,phone:p.phone,ice:p.ice,icePhone:p.icePhone,size:p.size},ch={};
   for(const[k]of CHF){const x=k==="nat"||k==="size"?v(k).toUpperCase():v(k);if(x!==String(cur[k]||"").trim()&&!(k==="nat"&&x===String(cur[k]||"").toUpperCase()))ch[k]=x}
@@ -884,6 +898,36 @@ async function chSave(e){const b=e.currentTarget,p=byBib(chBib),F=$("chF"),v=k=>
     m.textContent=`Saved: bib ${p.bib} is now ${fullName(p)} (was ${was})${link?", QID photos saved (link in RR14 field "+(cfg.map.qidUrl||"QIDPhoto")+")":""}. RR14 gets it within 30 seconds.`;chBib=null;qidReset();$("chQ").value="";renderSwap()}
   catch(err){m.textContent="Not saved: "+err.message;b.disabled=false;b.textContent="Save change";b.dataset.sure=""}}
 $("chQ").oninput=chList;
+/* ---- New tab: a new participant on a free bib ---- */
+function bibRanges(t){const o=[];String(t||"").split(/[,;\s]+/).forEach(r=>{const m=r.match(/^(\d+)(?:-(\d+))?$/);if(!m)return;let a=+m[1],z=m[2]?+m[2]:a;if(a>z)[a,z]=[z,a];for(let b=a;b<=z&&o.length<5000;b++)o.push(b)});return[...new Set(o)].sort((x,y)=>x-y)}
+const freeBibs=()=>bibRanges(cfg.freeBibs).filter(b=>!byBib(b));
+function renderAdd(){const all=bibRanges(cfg.freeBibs),fr=freeBibs(),box=$("nwBox");
+  $("nwInfo").textContent=all.length?`Free bibs from Settings: ${cfg.freeBibs}. ${fr.length} of ${all.length} still free. RR14 gets the new participant within 30 seconds.`:"";
+  if(!all.length){box.innerHTML='<p class="empty">No free bibs set for this event. Add a range in Settings, under New participants (for example 3000-3099).</p>';return}
+  if(!fr.length){box.innerHTML='<p class="empty">All free bibs are given out. Add more in Settings.</p>';return}
+  const S=$("nwBib");
+  if(S&&$("nwF")){const cur=+S.value;S.innerHTML=fr.slice(0,800).map(b=>`<option ${b===cur?"selected":""}>${b}</option>`).join("");if(!fr.includes(cur)){$("nwMsg").textContent=`Bib ${cur} was just taken on another iPad. Pick another.`}return}
+  box.innerHTML=`<div class="form"><label>Bib<select id="nwBib" style="font:800 28px/1 'Barlow Condensed',sans-serif;min-height:56px">${fr.slice(0,800).map(b=>`<option>${b}</option>`).join("")}</select></label></div>
+  <div class="acts" style="justify-content:flex-start;margin:10px 0 14px"><button type="button" class="ghost" id="nwScan">Photograph QID (front and back)</button><span class="small" id="nwPhotos"></span></div>
+  <form class="form" id="nwF" onsubmit="return false">${chFields(()=>"")}</form>
+  <div class="acts"><button type="button" class="ghost" id="nwClear">Clear</button><button type="button" class="pri" id="nwSave">Add participant</button></div>`;
+  for(const k of["sex","size"]){const el=$("nwF").elements[k];el.insertAdjacentHTML("afterbegin",'<option value="">–</option>');el.value=""}
+  $("nwScan").onclick=()=>openQid(+$("nwBib").value,"nwF");$("nwClear").onclick=()=>{qidReset();$("nwBox").innerHTML="";$("nwMsg").textContent="";renderAdd()};$("nwSave").onclick=nwSave}
+async function nwSave(e){const b=e.currentTarget,F=$("nwF"),v=k=>F.elements[k].value.trim(),m=$("nwMsg"),bib=+$("nwBib").value,f={};
+  for(const[k]of CHF){const x=k==="nat"||k==="size"?v(k).toUpperCase():v(k);if(x)f[k]=x}
+  if(!f.first&&!f.last){m.textContent="Give the new person a name.";return}
+  if(!f.sex){m.textContent="Pick men or women.";return}
+  if(f.qid&&!/^[23]\d{10}$/.test(f.qid)){m.textContent="QID must be 11 digits starting with 2 or 3.";return}
+  if(byBib(bib)){m.textContent=`Bib ${bib} is already taken. Pick another.`;renderAdd();return}
+  if(b.dataset.sure!=="1"){b.dataset.sure="1";b.textContent=`Tap again: add ${(f.first||"")+" "+(f.last||"")} on bib ${bib}`;setTimeout(()=>{if(b.isConnected){b.dataset.sure="";b.textContent="Add participant"}},5000);return}
+  b.disabled=true;b.textContent="Saving…";
+  try{const link=await qidUpload(bib);if(link)f.qidUrl=link;await admin("add",{eventId:EV.id,bib,fields:f,device:device||""});
+    const p={bib,first:f.first||"",last:f.last||"",team:"",sex:f.sex,nat:f.nat||"",dob:f.dob||"",ageGroup:"",size:f.size||"",qid:f.qid||"",email:f.email||"",phone:f.phone||"",ice:f.ice||"",icePhone:f.icePhone||"",sigId:null,sigTime:null,merch:false,gone:false};
+    const i=P.findIndex(x=>x.bib===bib);if(i>=0)P[i]=p;else P.push(p);
+    qidReset();$("nwBox").innerHTML="";renderAdd();
+    m.innerHTML=`Added: bib <b>${bib}</b> is ${esc(fullName(p))}. RR14 gets it within 30 seconds. <button type="button" class="pri" id="nwGo" style="margin-left:10px">Bib pickup for ${bib}</button>`;
+    $("nwGo").onclick=()=>{location.hash="#checkin";setTimeout(()=>{$("q").value=String(bib);renderList();select(bib)},50)}}
+  catch(err){m.textContent="Not saved: "+err.message;b.disabled=false;b.textContent="Add participant";b.dataset.sure=""}}
 /* Scan on the Change tab picks the bib to change. */
 function chGot(text){const m=String(text).match(/\d+/g),bib=m&&+m[m.length-1],p=bib&&byBib(bib),e=$("chScanMsg");
   if(!p){e.textContent="Code read ("+String(text).slice(0,30)+"), but no participant matches it.";return false}
@@ -895,7 +939,8 @@ $("v-swap").addEventListener("click",e=>{const b=e.target.closest("[data-ch]");i
 const qid={bib:null,f:null,b:null,text:{f:"",b:""}};
 function loadOCR(){return window.Tesseract?Promise.resolve():new Promise((ok,no)=>{const sc=document.createElement("script");sc.src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js";sc.onload=ok;sc.onerror=()=>no(new Error("Could not load the card reader"));document.head.appendChild(sc)})}
 async function shrink(file,max=1600){const img=await createImageBitmap(file),s=Math.min(1,max/Math.max(img.width,img.height)),c=document.createElement("canvas");c.width=Math.round(img.width*s);c.height=Math.round(img.height*s);c.getContext("2d").drawImage(img,0,0,c.width,c.height);return await new Promise(r=>c.toBlob(r,"image/jpeg",.85))}
-function openQid(bib){const p=byBib(bib);Object.assign(qid,{bib,f:null,b:null,text:{f:"",b:""}});$("qidH").textContent=`QID for #${bib} · ${fullName(p)}`;
+let qidTarget="chF";
+function openQid(bib,target){const p=byBib(bib)||{};qidTarget=target||"chF";Object.assign(qid,{bib,f:null,b:null,text:{f:"",b:""}});$("qidH").textContent=`QID for #${bib}${p.bib?" · "+fullName(p):" · new participant"}`;
   ["qidFi","qidBi"].forEach(i=>$(i).removeAttribute("src"));const F=$("qidFields").querySelectorAll("input");F.forEach(i=>i.value="");
   const f=$("qidFields");f.querySelector("[name=qid]").placeholder=p.qid||"";f.querySelector("[name=nat]").placeholder=p.nat||"";
   $("qidState").textContent="";$("qidMsg").hidden=true;$("qidSave").disabled=true;$("qidOv").classList.add("on")}
@@ -930,7 +975,7 @@ async function qidUpload(bib){if(!qid.f&&!qid.b)return"";const ts=Date.now(),pat
     const both=await new Promise(r=>c.toBlob(r,"image/jpeg",.85));const path=`${EV.id}/qid/${bib}-${ts}-both.jpg`;if(both&&!(await sb.storage.from(BUCKET).upload(path,both,{contentType:"image/jpeg"})).error)paths.both=path}catch(e){}
   const{data,error}=await sb.from("checkin_qid_docs").insert({event_id:EV.id,bib,front_path:paths.f||null,back_path:paths.b||null,both_path:paths.both||null,ocr:parseQid(qid.text.f+"\n"+qid.text.b),device:device||"",token:tok}).select("id").single();if(error)throw new Error(error.message);
   return CONF.supabaseUrl.replace(/\/$/,"")+"/functions/v1/checkin-sig?q="+data.id+"&t="+tok}
-$("qidSave").onclick=()=>{const f=$("qidFields"),v=k=>f.querySelector(`[name=${k}]`).value.trim(),F=$("chF");if(!F){$("qidOv").classList.remove("on");return}
+$("qidSave").onclick=()=>{const f=$("qidFields"),v=k=>f.querySelector(`[name=${k}]`).value.trim(),F=$(qidTarget);if(!F){$("qidOv").classList.remove("on");return}
   if(v("qid"))F.elements.qid.value=v("qid");if(v("dob"))F.elements.dob.value=v("dob");if(v("nat")&&!setNat(F.elements.nat,v("nat"))){$("qidState").textContent="Nation \""+v("nat")+"\" is not in the list. Pick it in the form.";}
   if(v("name")){const w=v("name").split(/\s+/);F.elements.first.value=w[0];F.elements.last.value=w.slice(1).join(" ")}
   $("qidOv").classList.remove("on");chPhotoNote()};
@@ -1042,7 +1087,7 @@ function renderStats(){
   $("recent").innerHTML=ev.length?`<table class="stack"><thead><tr><th>Time</th><th>What</th><th>Device</th></tr></thead><tbody>${ev.slice(0,12).map(([t,s,d])=>`<tr><td class="n">${fmt(t)}</td><td>${esc(s)}</td><td>${esc(d||"")}</td></tr>`).join("")}</tbody></table>`:'<p class="empty">No activity yet.</p>';
 }
 
-function render(){$("slogan").textContent=cfg.slogan||"Made with Passion. Driven by Data.";const v=location.hash.slice(1);$("scanFab").hidden=v==="merch"||v==="stats"||v==="swap";if(v==="merch")renderMerch();else if(v==="stats")renderStats();else if(v==="swap")renderSwap();else{renderList();if(!$("cv")||!sel)renderDetail()}}
+function render(){$("slogan").textContent=cfg.slogan||"Made with Passion. Driven by Data.";const v=location.hash.slice(1);$("scanFab").hidden=v==="merch"||v==="stats"||v==="swap"||v==="add";if(v==="add")renderAdd();else if(v==="merch")renderMerch();else if(v==="stats")renderStats();else if(v==="swap")renderSwap();else{renderList();if(!$("cv")||!sel)renderDetail()}}
 
 /* ---- events ---- */
 $("q").oninput=()=>{renderList();const v=$("q").value.trim();if(/^\d+$/.test(v)&&byBib(+v)&&String(byBib(+v).bib)===v&&!P.some(p=>String(p.bib).startsWith(v)&&p.bib!==+v))select(+v)};
