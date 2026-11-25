@@ -47,8 +47,8 @@ main{padding-bottom:150px!important}body.mini #scanFab{right:90px}
 body.fsui aside{position:fixed;right:0;top:0;bottom:0;transform:translateX(calc(100% + 60px));transition:transform .22s ease;z-index:45;box-shadow:-10px 0 40px rgba(0,0,0,.35)}
 body.fsui.menuOn aside{transform:none}body.fsui #scanFab{right:26px}
 #menuTab{display:none}
-body.fsui #menuTab{display:flex;align-items:center;justify-content:center;position:fixed;left:50%;bottom:max(10px,env(safe-area-inset-bottom));transform:translateX(-50%);z-index:46;width:64px;height:40px;border-radius:20px;border:0;background:var(--ink);color:var(--bg);opacity:.85;box-shadow:0 4px 14px rgba(0,0,0,.3)}
-body.fsui.menuOn #menuTab svg{transform:rotate(180deg)}
+body.fsui #menuTab{display:flex;align-items:center;justify-content:center;position:fixed;right:0;top:50%;transform:translateY(-50%);transition:right .22s ease;z-index:46;width:38px;height:84px;border-radius:16px 0 0 16px;border:0;background:var(--ink);color:var(--bg);opacity:.85;box-shadow:0 4px 14px rgba(0,0,0,.3)}
+body.fsui.menuOn #menuTab{right:208px}body.fsui.menuOn.mini #menuTab{right:72px}#menuTab svg{width:26px;height:26px;min-width:26px;flex:none;transition:transform .22s}body.fsui.menuOn #menuTab svg{transform:rotate(180deg)}
 #menuShade{display:none}body.fsui.menuOn #menuShade{display:block;position:fixed;inset:0;z-index:44;background:rgba(0,0,0,.25)}
 body.fs main{padding-top:calc(20px + 5vh)!important}body.fs aside{padding-top:5vh}
 #shirtBibs{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;margin:14px 0 6px}#shirtBibs .bb{font:800 44px/1 "Barlow Condensed",sans-serif;min-width:2.2em}
@@ -338,7 +338,7 @@ body.settings #gear{background:var(--red);color:#fff}
     <div class="acts" style="justify-content:center"><button type="button" class="ghost" id="qrCopy">Copy link</button><button type="button" class="pri" id="qrClose">Done</button></div>
   </div>
 </div>
-<button type="button" id="menuTab" aria-label="Show menu" aria-expanded="false"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg></button><div id="menuShade"></div>
+<button type="button" id="menuTab" aria-label="Show menu" aria-expanded="false"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg></button><div id="menuShade"></div>
 <button type="button" id="fsExit" hidden><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 4v5H4M15 4v5h5M20 15h-5v5M4 15h5v5"/></svg>Exit full screen</button>
 <div class="ov" id="shirtOv" role="dialog" aria-modal="true" aria-labelledby="shirtH">
   <div class="sheet" style="width:min(640px,100%);text-align:center">
@@ -459,7 +459,7 @@ body.settings #gear{background:var(--red);color:#fff}
 "use strict";
 {
 let syncState=null,EV=null;
-const APP_VERSION="1.7.6";
+const APP_VERSION="1.7.7";
 const SIZES=["XS","S","M","L","XL","XXL"];
 const FIELDS=[["dob","Date of birth",'type="date"'],["nat","Nation",'autocapitalize="characters" placeholder="e.g. QATAR"'],["qid","QID",'inputmode="numeric"'],["ice","ICE person",'placeholder="Emergency contact name"'],["icePhone","ICE phone",'type="tel" placeholder="+974…"'],["email","Email",'type="email" placeholder="name@example.com"'],["phone","Phone",'type="tel" placeholder="+974…"']];
 const FK=FIELDS.map(f=>f[0]);
