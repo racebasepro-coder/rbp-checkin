@@ -299,6 +299,10 @@ body.settings #gear{background:var(--red);color:#fff}
   </section>
   <section class="view" id="v-stats">
     <div class="kpis" id="kpis"></div>
+    <div class="panel" id="ncPanel"><div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap"><h3 style="margin:0;flex:1">Not collected <span class="sub" id="ncCount"></span></h3>
+      <div class="choice" role="group" aria-label="Who" style="grid-template-columns:repeat(3,auto);margin:0" id="ncWho"><button type="button" data-nc="all" aria-pressed="true" style="min-height:48px;font-size:18px;padding:0 16px">All</button><button type="button" data-nc="solo" aria-pressed="false" style="min-height:48px;font-size:18px;padding:0 16px">Solo</button><button type="button" data-nc="team" aria-pressed="false" style="min-height:48px;font-size:18px;padding:0 16px">Team</button></div>
+      <button type="button" class="pri" id="ncPdf" style="min-height:48px">Export PDF</button></div>
+      <div class="scroll" style="max-height:340px;overflow:auto;margin-top:10px"><table id="ncTable"></table></div><p class="small" id="ncMsg"></p></div>
     <div class="two">
       <div class="panel"><h3>Shirts by size and stock</h3><div class="scroll"><table id="sizes"></table></div></div>
       <div class="panel"><h3>Signatures per hour</h3><div id="hours"></div></div>
@@ -486,7 +490,7 @@ body.settings #gear{background:var(--red);color:#fff}
 "use strict";
 {
 let syncState=null,EV=null;
-const APP_VERSION="1.9.1";
+const APP_VERSION="1.9.2";
 const SIZES=["XS","S","M","L","XL","XXL"];
 const FIELDS=[["dob","Date of birth",'type="date"'],["nat","Nation",'autocapitalize="characters" placeholder="e.g. QATAR"'],["qid","QID",'inputmode="numeric"'],["ice","ICE person",'placeholder="Emergency contact name"'],["icePhone","ICE phone",'type="tel" placeholder="+974…"'],["email","Email",'type="email" placeholder="name@example.com"'],["phone","Phone",'type="tel" placeholder="+974…"']];
 const FK=FIELDS.map(f=>f[0]);
@@ -1083,7 +1087,31 @@ async function tickPend(){const now=Date.now();for(const id of Object.keys(pend)
 async function give(id,on){const t=on?new Date().toISOString():null;try{await RR.issue(id,on)}catch(e){$("mcount").textContent="Could not save a package: "+e.message+". Tap Collected again.";return}for(const m of groupOf(id))Object.assign(m,{merch:on,merchTime:t,merchDesk:on?device||"unknown":null});render()}
 
 /* ---- statistics ---- */
-function renderStats(){
+/* ---- Not collected report (screen + PDF) ---- */
+let ncWho="all";
+function ncRows(){return P.filter(p=>!p.sigTime&&!p.gone&&(ncWho==="all"||(ncWho==="team"?!!p.team:!p.team))).sort((a,b)=>(a.team||"").localeCompare(b.team||"")||a.bib-b.bib)}
+const ncCols=[["Bib",p=>String(p.bib)],["Name",p=>fullName(p)],["Team",p=>p.team?`${p.team} (${teamOf(p).filter(m=>m.sigTime).length}/${teamOf(p).length} collected)`:"Solo"],["Category",p=>p.ageGroup||""],["Nation",p=>p.nat||""],["Shirt",p=>p.size||""],["Phone",p=>p.phone||""]];
+function renderNC(){const R=ncRows();$("ncCount").textContent=`· ${R.length}`;
+  $("ncTable").innerHTML=`<thead><tr>${ncCols.map(c=>`<th>${c[0]}</th>`).join("")}</tr></thead><tbody>${R.slice(0,300).map(p=>`<tr>${ncCols.map(([h,f])=>`<td>${h==="Bib"?`<span class="bb" style="${bibStyle(p)}">${p.bib}</span>`:esc(f(p))}</td>`).join("")}</tr>`).join("")}</tbody>`;
+  $("ncMsg").textContent=R.length>300?`Showing 300 of ${R.length} here; the PDF has all of them.`:R.length?"":"Everybody collected."}
+function loadScript(src){return new Promise((ok,no)=>{const sc=document.createElement("script");sc.src=src;sc.onload=ok;sc.onerror=()=>no(new Error("Could not load "+src.split("/").slice(-1)[0]));document.head.appendChild(sc)})}
+async function ncPdf(){const b=$("ncPdf"),m=$("ncMsg");b.disabled=true;b.textContent="Making PDF…";
+  try{if(!window.jspdf)await loadScript("https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js");
+    if(!window.jspdf.jsPDF.API.autoTable)await loadScript("https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js");
+    const R=ncRows(),doc=new window.jspdf.jsPDF({orientation:"landscape",unit:"mm",format:"a4"}),now=new Date(),who={all:"all",solo:"solo only",team:"teams only"}[ncWho];
+    const total=P.filter(p=>!p.gone).length;
+    doc.setFontSize(16);doc.text(`${EV?EV.name:"Event"}: not collected (${who})`,14,15);
+    doc.setFontSize(10);doc.text(`${R.length} of ${total} participants have not collected their bib. Made ${now.toLocaleString()} on ${device||"iPad"}. Internal use only.`,14,22);
+    // The PDF's built-in font has Latin letters only: drop accents and emoji; Arabic-only text is marked.
+    const pt=t=>{const x=String(t).replace(/[\u2018\u2019]/g,"'").replace(/[\u201c\u201d]/g,'"').normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^\x20-\xff]/g,"").replace(/\s{2,}/g," ").trim();return x||(/[\u0600-\u06ff]/.test(t)?"(Arabic, see app)":"")};
+    doc.autoTable({startY:27,head:[ncCols.map(c=>c[0])],body:R.map(p=>ncCols.map(c=>pt(c[1](p)))),styles:{fontSize:9,cellPadding:1.6},headStyles:{fillColor:[227,54,31]},
+      columnStyles:{0:{cellWidth:16,fontStyle:"bold"}},didDrawPage:d=>{doc.setFontSize(8);doc.text(`Page ${doc.internal.getNumberOfPages()}`,doc.internal.pageSize.getWidth()-24,doc.internal.pageSize.getHeight()-6)}});
+    const fn=`not-collected-${EV?EV.id:"event"}-${now.toISOString().slice(0,16).replace(/[T:]/g,"-")}.pdf`;doc.save(fn);m.textContent=`PDF ready: ${fn}`}
+  catch(e){m.textContent="PDF not made: "+e.message}
+  b.disabled=false;b.textContent="Export PDF"}
+$("ncPdf").onclick=ncPdf;
+$("ncWho").onclick=e=>{const b=e.target.closest("[data-nc]");if(!b)return;ncWho=b.dataset.nc;$("ncWho").querySelectorAll("[data-nc]").forEach(x=>x.setAttribute("aria-pressed",String(x===b)));renderNC()};
+function renderStats(){renderNC();
   const n=P.length,sig=P.filter(p=>p.sigTime).length,mer=P.filter(p=>p.merch).length,solo=P.filter(p=>!p.team),team=P.filter(p=>p.team),pc=(a,b)=>b?Math.round(a/b*100):0;
   const k=[["Bibs collected",sig,n,"of all participants"],["Packages issued",mer,n,"shirts and bags"],["Waiting at package desk",sig-mer,sig,"signed, package not issued"],["Solo · team",`<span class="st2"><span><small>Solo</small>${solo.filter(p=>p.sigTime).length}<em>/${solo.length}</em></span><span><small>Team</small>${team.filter(p=>p.sigTime).length}<em>/${team.length}</em></span></span>`,null,"bibs collected"]];
   $("kpis").innerHTML=k.map(([l,v,t,s])=>`<div class="kpi"><small>${l}</small><b>${v}${t!=null?`<span style="font-size:.45em;color:var(--mute)"> / ${t}</span>`:""}</b><small>${s}${t!=null?` · ${pc(v,t)}%`:""}</small>${t!=null?`<div class="meter"><i style="width:${pc(v,t)}%"></i></div>`:""}</div>`).join("");
