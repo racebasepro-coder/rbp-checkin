@@ -13,16 +13,43 @@ const WRITE_DEFAULT: Record<string, string> = {
   merchDesk: "PackageDevice", qid: "QID", qv: "QatariVerified", dob: "DateOfBirth", nat: "Nation",
   ice: "ICEName", icePhone: "ICEPhone", phone: "Phone", email: "Email",
 };
-// Our column <- RR14 list column. Settings can override with read map keys of the same name.
-const READ_DEFAULT: Record<string, string> = {
-  bib: "Bib", first_name: "Firstname", last_name: "Lastname", team: "Team", sex: "Sex",
-  nation: "Nation", dob: "DateOfBirth", age_group: "AgeGroup.Name", shirt_size: "TShirt",
-  qid: "QID", email: "Email", phone: "Phone", ice_name: "ICEName", ice_phone: "ICEPhone",
+// Our column <- RR14 list column. The first name found in the list wins; Settings can override (readMap).
+const READ_ALIASES: Record<string, string[]> = {
+  bib: ["Bib", "BIB", "StartNo"], first_name: ["Firstname", "FirstName", "First Name"], last_name: ["Lastname", "LastName", "Last Name"],
+  team: ["Team", "Club", "TeamName"], sex: ["Sex", "Gender"], nation: ["Nation", "Nationality", "Country"],
+  dob: ["DateOfBirth", "DOB", "Birthdate", "Date of Birth"], yob: ["YoB", "YearOfBirth", "Year of Birth"],
+  age_group: ["AgeGroup.Name", "Age Group 1", "AgeGroup1.Name", "AgeGroup", "Category"],
+  shirt_size: ["TShirt", "T-Shirt Size", "TShirtSize", "Shirt", "T-Shirt"], qid: ["QID"],
+  email: ["Email", "EMail", "E-Mail"], phone: ["Phone", "CellPhone", "Mobile"],
+  ice_name: ["ICEName", "ICE Name"], ice_phone: ["ICEPhone", "ICENumber", "ICE Phone"],
 };
-// Which app key each read column corresponds to, so a renamed field is read under the same name.
+// Which app key each read column corresponds to, so a field renamed in Settings is read under the same name.
 const READ_FROM_APP: Record<string, string> = {
-  nation: "nat", dob: "dob", qid: "qid", email: "email", phone: "phone", ice_name: "ice", ice_phone: "icePhone",
+  nation: "nat", dob: "dob", qid: "qid", email: "email", phone: "phone", ice_name: "ice", ice_phone: "icePhone", age_group: "ageGroup",
 };
+
+// RR14 Simple API lists can be JSON (objects or arrays) or an HTML table; read all of them.
+function decode(t: string) {
+  return t.replace(/<[^>]*>/g, "").replace(/&nbsp;/g, " ").replace(/&amp;/g, "&").replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&#(\d+);/g, (_, n) => String.fromCharCode(+n)).trim();
+}
+function parseList(text: string, cols: string[]): Record<string, unknown>[] {
+  const t = text.trim();
+  if (t.startsWith("<")) {
+    const rows = [...t.matchAll(/<tr[^>]*>([\s\S]*?)<\/tr>/gi)].map((m) => ({
+      head: /columnhead/i.test(m[0].slice(0, 80)),
+      cells: [...m[1].matchAll(/<t[dh][^>]*>([\s\S]*?)<\/t[dh]>/gi)].map((c) => decode(c[1])),
+    }));
+    const head = rows.find((r) => r.head) ?? rows.find((r) => r.cells.includes("Bib"));
+    if (!head) throw new Error("RR14 list is HTML but has no column header row");
+    const n = head.cells.length;
+    return rows.filter((r) => r !== head && !r.head && r.cells.length === n)
+      .map((r) => Object.fromEntries(head.cells.map((h, i) => [h, r.cells[i]])));
+  }
+  const raw = JSON.parse(t);
+  const list = Array.isArray(raw) ? raw : Object.values(raw);
+  return list.map((r: unknown) => Array.isArray(r) ? Object.fromEntries(cols.map((c, i) => [c, r[i]])) : r as Record<string, unknown>);
+}
 
 function toDate(v: unknown): string | null {
   const s = String(v ?? "").trim();
@@ -43,16 +70,16 @@ async function pull(ev: string, cfg: Record<string, any>, LIST_URL?: string | nu
   if (!LIST_URL) return { pulled: 0, note: "No RR14 list link for this event" };
   const res = await fetch(LIST_URL);
   if (!res.ok) throw new Error(`RR14 list ${res.status}`);
-  const raw = await res.json();
-  const map: Record<string, string> = { ...READ_DEFAULT };
-  for (const [col, key] of Object.entries(READ_FROM_APP)) if (cfg.map?.[key]) map[col] = cfg.map[key];
-  if (cfg.map?.ageGroup) map.age_group = cfg.map.ageGroup;
-  for (const [col, name] of Object.entries(cfg.readMap ?? {})) if (name) map[col] = String(name);
-  // RR14 JSON lists come as objects keyed by column name, or as arrays in list column order.
   const cols: string[] = String(cfg.readColumns ?? "").split(",").map((c) => c.trim()).filter(Boolean);
-  const list = Array.isArray(raw) ? raw : Object.values(raw);
-  const rows: Record<string, unknown>[] = list.map((r: unknown) =>
-    Array.isArray(r) ? Object.fromEntries((cols.length ? cols : Object.values(map)).map((c, i) => [c, r[i]])) : r as Record<string, unknown>);
+  const rows = parseList(await res.text(), cols.length ? cols : Object.values(READ_ALIASES).map((a) => a[0]));
+  const present = new Set(Object.keys(rows[0] ?? {}));
+  const map: Record<string, string> = {};
+  for (const [col, names] of Object.entries(READ_ALIASES)) map[col] = names.find((n) => present.has(n)) ?? names[0];
+  for (const [col, key] of Object.entries(READ_FROM_APP)) {
+    const m = cfg.map?.[key];
+    if (m && present.has(m)) map[col] = m;
+  }
+  for (const [col, name] of Object.entries(cfg.readMap ?? {})) if (name) map[col] = String(name);
 
   // Bibs with edits not yet in RR14 keep our values until RR14 has them.
   const { data: open } = await sb.from("checkin_outbox").select("bib").eq("event_id", ev).is("sent_at", null);
@@ -61,20 +88,25 @@ async function pull(ev: string, cfg: Record<string, any>, LIST_URL?: string | nu
   const out = rows.map((r) => {
     const g = (k: string) => String(r[map[k]] ?? "").trim();
     const sex = g("sex").toUpperCase();
+    // RR14's "YoB" column may hold a full date (DD.MM.YYYY) or only the year.
+    const yobRaw = g("yob");
+    const dob = toDate(r[map.dob]) ?? toDate(yobRaw);
+    const yob = /^\d{4}$/.test(yobRaw) ? parseInt(yobRaw) : dob ? parseInt(dob.slice(0, 4)) : null;
     return {
       event_id: ev, bib: parseInt(g("bib")), first_name: g("first_name"), last_name: g("last_name"), team: g("team"),
       sex: /^(F|W|Ž|Z)/.test(sex) ? "W" : sex ? "M" : null,
-      nation: g("nation").toUpperCase(), dob: toDate(r[map.dob]), age_group: g("age_group"),
-      shirt_size: g("shirt_size").toUpperCase(), qid: g("qid"), email: g("email"), phone: g("phone"),
-      ice_name: g("ice_name"), ice_phone: g("ice_phone"), rr_synced_at: now,
+      nation: g("nation").toUpperCase(), dob, yob,
+      age_group: g("age_group"), shirt_size: g("shirt_size").toUpperCase(), qid: g("qid"), email: g("email"),
+      phone: g("phone"), ice_name: g("ice_name"), ice_phone: g("ice_phone"), rr_synced_at: now,
     };
-  }).filter((p) => Number.isFinite(p.bib) && p.bib > 0 && !hold.has(p.bib));
+  // Bibs without a name are empty slots in RR14 (not yet sold or assigned): skip them.
+  }).filter((p) => Number.isFinite(p.bib) && p.bib > 0 && (p.first_name || p.last_name) && !hold.has(p.bib));
   // Base data only: pickup and package state belong to the app and are never overwritten.
   for (let i = 0; i < out.length; i += 500) {
     const { error } = await sb.from("checkin_participants").upsert(out.slice(i, i + 500), { onConflict: "event_id,bib" });
     if (error) throw error;
   }
-  return { pulled: out.length, held: hold.size };
+  return { pulled: out.length, rows: rows.length, held: hold.size, columns: [...present].slice(0, 30) };
 }
 
 async function push(ev: string, cfg: Record<string, any>, WRITE_URL?: string | null) {
