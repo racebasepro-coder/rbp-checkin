@@ -376,7 +376,7 @@ body.settings #gear{background:var(--red);color:#fff}
 "use strict";
 {
 let syncState=null,EV=null;
-const APP_VERSION="1.3.9";
+const APP_VERSION="1.4.0";
 const SIZES=["XS","S","M","L","XL","XXL"];
 const FIELDS=[["dob","Date of birth",'type="date"'],["nat","Nation",'maxlength="3" autocapitalize="characters" placeholder="CRO"'],["qid","QID",'inputmode="numeric"'],["ice","ICE person",'placeholder="Emergency contact name"'],["icePhone","ICE phone",'type="tel" placeholder="+974…"'],["email","Email",'type="email" placeholder="name@example.com"'],["phone","Phone",'type="tel" placeholder="+974…"']];
 const FK=FIELDS.map(f=>f[0]);
@@ -511,13 +511,13 @@ async function renderSync(){const box=$("syncBox"),rb=$("rrBox");if(!box||!sb)re
   try{
     const[{count:total},{data:S},{data:O}]=await Promise.all([
       sb.from("checkin_signatures").select("id",{count:"exact",head:true}).eq("event_id",EV&&EV.id),
-      sb.from("checkin_signatures").select("id,collector,bibs,device,created_at").eq("event_id",EV&&EV.id).order("created_at",{ascending:false}).limit(25),
+      sb.from("checkin_signatures").select("id,collector,bibs,device,created_at,deleted_at,deleted_how,removed").eq("event_id",EV&&EV.id).order("created_at",{ascending:false}).limit(25),
       sb.from("checkin_outbox").select("bib,fields,sent_at,last_error").eq("event_id",EV&&EV.id).not("fields->sigUrl","is",null).order("id",{ascending:false}).limit(300)]);
-    const st=g=>{const rows=(O||[]).filter(o=>String(o.fields.sigUrl||"").includes("id="+g.id+"&"));if(!rows.length)return"old";if(rows.every(o=>o.sent_at))return"sent";return rows.some(o=>!o.sent_at&&o.last_error)?"failed":"waiting"};
-    const lbl={sent:["✓","Sent to RR14","var(--ok)"],waiting:["…","Waiting for RR14","#c77700"],failed:["!","RR14 refused, will retry","var(--red)"],old:["✓","Saved","var(--mute)"]};
+    const st=g=>{if(g.deleted_at)return"deleted";const rows=(O||[]).filter(o=>String(o.fields.sigUrl||"").includes("id="+g.id+"&"));if(!rows.length)return"old";if(rows.every(o=>o.sent_at))return"sent";return rows.some(o=>!o.sent_at&&o.last_error)?"failed":"waiting"};
+    const lbl={sent:["✓","Sent to RR14","var(--ok)"],waiting:["…","Waiting for RR14","#c77700"],failed:["!","RR14 refused, will retry","var(--red)"],old:["✓","Saved","var(--mute)"],deleted:["✕","Deleted, cleared in RR14","var(--red)"]};
     const R=(S||[]).map(g=>({...g,s:st(g)})),c=k=>R.filter(g=>g.s===k).length;
-    box.innerHTML=`<p style="margin:0 0 8px;font-weight:600">${total||0} signatures saved · last ${R.length}: ${c("sent")} sent to RR14, ${c("waiting")} waiting, ${c("failed")} failed</p>`+
-      (R.length?`<div class="scroll"><table class="stack"><thead><tr><th>Time</th><th>Bib</th><th>Device</th><th>File</th><th>RR14</th></tr></thead><tbody>${R.map(g=>{const L=lbl[g.s],by=byBib(g.collector);return `<tr><td class="n">${fmt(g.created_at)}</td><td>#${g.collector}${g.bibs.length>1?` +${g.bibs.length-1}`:""} ${by?esc(fullName(by)):""}</td><td>${esc(g.device||"")}</td><td style="color:var(--ok);font-weight:700">✓ Saved</td><td style="color:${L[2]};font-weight:700">${L[0]} ${L[1]}</td></tr>`}).join("")}</tbody></table></div>`:'<p class="sub">No signatures yet.</p>');
+    box.innerHTML=`<p style="margin:0 0 8px;font-weight:600">${total||0} signatures saved · last ${R.length}: ${c("sent")} sent to RR14, ${c("waiting")} waiting, ${c("failed")} failed${c("deleted")?`, <span style="color:var(--red)">${c("deleted")} deleted</span>`:""}</p>`+
+      (R.length?`<div class="scroll"><table class="stack"><thead><tr><th>Time</th><th>Bib</th><th>Device</th><th>File</th><th>RR14</th></tr></thead><tbody>${R.map(g=>{const L=lbl[g.s],by=byBib(g.collector);return `<tr><td class="n">${fmt(g.created_at)}</td><td>#${g.collector}${g.bibs.length>1?` +${g.bibs.length-1}`:""} ${by?esc(fullName(by)):""}</td><td>${esc(g.device||"")}</td>${g.deleted_at?`<td style="color:var(--red);font-weight:700">✕ Deleted ${fmt(g.deleted_at)}${g.deleted_how==="admin"?" (admin)":g.deleted_how==="undo"?" (undo)":""}</td>`:`<td style="color:var(--ok);font-weight:700">✓ Saved${g.removed&&g.removed.length?`<br><span style="color:var(--red);font-weight:600">Removed ${g.removed.map(b=>"#"+b).join(", ")}</span>`:""}</td>`}<td style="color:${L[2]};font-weight:700">${L[0]} ${L[1]}</td></tr>`}).join("")}</tbody></table></div>`:'<p class="sub">No signatures yet.</p>');
   }catch(e){box.innerHTML='<p class="note warn">Could not read the signature list.</p>'}}
 let EVS=[];
 /* Setup QR: a new iPad scans it with the Camera app and opens the check-in already signed in, on this event. */
