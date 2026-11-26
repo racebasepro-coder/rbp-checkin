@@ -515,7 +515,7 @@ body.settings #gear{background:var(--red);color:#fff}
 "use strict";
 {
 let syncState=null,EV=null;
-const APP_VERSION="2.0.7";
+const APP_VERSION="2.0.8";
 const SIZES=["XS","S","M","L","XL","XXL"];
 const FIELDS=[["dob","Date of birth",'type="date"'],["nat","Nation",'autocapitalize="characters" placeholder="e.g. QATAR"'],["qid","QID",'inputmode="numeric"'],["ice","ICE person",'placeholder="Emergency contact name"'],["icePhone","ICE phone",'type="tel" placeholder="+974…"'],["email","Email",'type="email" placeholder="name@example.com"'],["phone","Phone",'type="tel" placeholder="+974…"']];
 const FK=FIELDS.map(f=>f[0]);
@@ -946,7 +946,7 @@ function cpGot(text){const m=String(text).match(/\d+/g),bib=m&&+m[m.length-1],p=
 function chipShow(p){const M=teamOf(p).filter(m=>!m.gone),first=M.find(m=>m.chipTime),by=first&&byBib(first.chipBy),code=chipCode(p.chipId||(M.find(m=>m.chipId)||{}).chipId);
   $("chipTeam").textContent=p.team;$("chipWho").innerHTML=`<span style="color:light-dark(#4a4a46,#b5b5ae)">${p.bib}</span> ${esc(fullName(p))}`;$("chipSub").textContent=`${M.length} ${M.length===1?"member":"members"}`;
   $("chipCode").textContent=code||"No chip";$("chipCode").style.color=code?"":"var(--mute)";
-  $("chipMembers").style.gridTemplateRows=`repeat(${Math.max(1,Math.ceil(M.length/2))},auto)`;$("chipMembers").innerHTML=M.map(m=>`<li${m.bib===p.bib?' class="me" style="border-color:var(--red)"':""}><span class="bb" style="${bibStyle(m)}">${m.bib}</span><span class="nm"${fullName(m).length>24?' style="font-size:13px"':""}>${esc(fullName(m))}</span>${first&&m.bib===first.chipBy?'<span class="tk">took the chip</span>':""}</li>`).join("");
+  $("chipMembers").style.gridTemplateRows=`repeat(${Math.max(1,Math.ceil(M.length/2))},auto)`;$("chipMembers").innerHTML=M.map(m=>`<li${m.bib===p.bib?' class="me" style="border-color:var(--red)"':""}><span class="bb" style="${m.bib===p.bib?bibStyle(m):"background:light-dark(#8a8a85,#5a5a56);color:#fff"}">${m.bib}</span><span class="nm"${fullName(m).length>24?' style="font-size:13px"':""}>${esc(fullName(m))}</span>${first&&m.bib===first.chipBy?'<span class="tk">took the chip</span>':""}</li>`).join("");
   const g=$("chipGive"),u=$("chipUndo"),st=$("chipState");g.dataset.sure="";u.dataset.sure="";u.textContent="Undo";
   if(first){st.innerHTML=`<b style="color:var(--red)">Chip already taken</b><br>Bib <b>${esc(first.chipBy)}</b> ${by?esc(fullName(by)):""} took the chip at <b>${hm(first.chipTime)}</b>${first.chipDesk?" · "+tabTag(first.chipDesk):""}`;g.hidden=true;u.hidden=false}
   else if(!code){st.innerHTML='<b style="color:var(--red)">No TeamChipID in RR14 for this team.</b> Add it in RR14; it shows here within 30 seconds.';g.hidden=true;u.hidden=true}
