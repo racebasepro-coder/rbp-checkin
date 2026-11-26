@@ -518,7 +518,7 @@ body.settings #gear{background:var(--red);color:#fff}
 "use strict";
 {
 let syncState=null,EV=null;
-const APP_VERSION="2.0.9";
+const APP_VERSION="2.0.10";
 const SIZES=["XS","S","M","L","XL","XXL"];
 const FIELDS=[["dob","Date of birth",'type="date"'],["nat","Nation",'autocapitalize="characters" placeholder="e.g. QATAR"'],["qid","QID",'inputmode="numeric"'],["ice","ICE person",'placeholder="Emergency contact name"'],["icePhone","ICE phone",'type="tel" placeholder="+974…"'],["email","Email",'type="email" placeholder="name@example.com"'],["phone","Phone",'type="tel" placeholder="+974…"']];
 const FK=FIELDS.map(f=>f[0]);
@@ -1265,7 +1265,7 @@ else{
 </script>
 <div class="npad" id="npad" role="group" aria-label="Number pad"></div>
 <script>
-(()=>{const touch=matchMedia("(pointer:coarse)").matches||navigator.maxTouchPoints>1;if(!touch)return;
+(()=>{const touch=(window.matchMedia&&matchMedia("(pointer:coarse)").matches)||navigator.maxTouchPoints>1;if(!touch)return;
 const ids=["q","cpQ","chQ"],pad=document.getElementById("npad");let cur=null,abc=false;
 pad.innerHTML=["1","2","3","4","5","6","7","8","9","ABC","0","⌫"].map(k=>`<button type="button" data-k="${k}" class="${k.length>1?"k-s":""}">${k}</button>`).join("")+'<button type="button" class="k-ok" data-k="OK">OK</button>';
 ids.forEach(id=>{const el=document.getElementById(id);if(!el)return;el.setAttribute("inputmode","none");
