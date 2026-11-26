@@ -518,7 +518,7 @@ body.settings #gear{background:var(--red);color:#fff}
 "use strict";
 {
 let syncState=null,EV=null;
-const APP_VERSION="2.0.14";
+const APP_VERSION="2.0.15";
 const SIZES=["XS","S","M","L","XL","XXL"];
 const FIELDS=[["dob","Date of birth",'type="date"'],["nat","Nation",'autocapitalize="characters" placeholder="e.g. QATAR"'],["qid","QID",'inputmode="numeric"'],["ice","ICE person",'placeholder="Emergency contact name"'],["icePhone","ICE phone",'type="tel" placeholder="+974…"'],["email","Email",'type="email" placeholder="name@example.com"'],["phone","Phone",'type="tel" placeholder="+974…"']];
 const FK=FIELDS.map(f=>f[0]);
@@ -1091,6 +1091,12 @@ let zx=null,zxLoad=null;
 function loadZX(){if(zx||zxLoad)return zxLoad;zxLoad=new Promise(res=>{const sc=document.createElement("script");sc.src="https://cdn.jsdelivr.net/npm/@zxing/library@0.21.3/umd/index.min.js";
   sc.onload=()=>{try{const Z=window.ZXing,h=new Map(),F=Z.BarcodeFormat;h.set(Z.DecodeHintType.POSSIBLE_FORMATS,[F.CODE_128,F.CODE_39,F.EAN_13,F.EAN_8,F.ITF,F.UPC_A,F.CODABAR,F.QR_CODE]);h.set(Z.DecodeHintType.TRY_HARDER,true);zx=new Z.MultiFormatReader();zx.setHints(h)}catch(e){}res()};sc.onerror=()=>res();document.head.appendChild(sc)});return zxLoad}
 function zxRead(c){if(!zx)return null;try{const Z=window.ZXing;return zx.decode(new Z.BinaryBitmap(new Z.HybridBinarizer(new Z.HTMLCanvasElementLuminanceSource(c)))).getText()}catch(e){return null}finally{try{zx.reset()}catch(e){}}}
+/* ZXing misses a 1D barcode when the row starts on a dark background (a hand, a table) before the white bib. So the frame is also read as centred strips of several widths, and turned 90 degrees for a barcode held upright. */
+const ZXC=[[1,1,0],[.55,.3,0],[.75,.3,0],[.4,.25,0],[.9,.35,0],[.55,.3,1],[.75,.3,1],[.65,.5,0]];let zxI=0;
+function zxCrop(src,fw,fh,rot){const W=src.width,H=src.height,w=Math.round(W*fw),h=Math.round(H*fh),c=document.createElement("canvas"),x=c.getContext("2d",{willReadFrequently:true});
+  if(rot){const w2=Math.round(H*fw),h2=Math.round(W*fh);c.width=w2;c.height=h2;x.translate(w2/2,h2/2);x.rotate(Math.PI/2);x.drawImage(src,(W-h2)/2,(H-w2)/2,h2,w2,-h2/2,-w2/2,h2,w2)}
+  else{c.width=w;c.height=h;x.drawImage(src,(W-w)/2,(H-h)/2,w,h,0,0,w,h)}return c}
+function zxScan(src,n){if(!zx)return null;for(let k=0;k<n;k++){const [fw,fh,rot]=ZXC[zxI++%ZXC.length];const r=zxRead(fw===1&&fh===1?src:zxCrop(src,fw,fh,rot));if(r)return r}return null}
 function gotQR(text){if(location.hash==="#swap")return chGot(text);if(location.hash==="#chips")return cpGot(text);const msg=$("qrmsg"),m=String(text).match(/\d+/g),bib=m&&+m[m.length-1],p=bib&&byBib(bib);
   if(p){msg.textContent=`Scanned bib ${bib}.`;$("q").value=String(bib);renderList();select(bib);return true}
   msg.textContent="Code read ("+String(text).slice(0,30)+"), but no participant matches it.";return false}
@@ -1101,18 +1107,18 @@ $("scanBtn").onclick=async()=>{
   try{camStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:"environment"},width:{ideal:1280},height:{ideal:720}},audio:false})}
   catch(e){$("qrmsg").textContent="Camera not allowed. Take a photo of the QR code instead.";$("qr").click();return}
   const v=$("camV");v.srcObject=camStream;$("camMsg").textContent="Hold the QR code or barcode inside the frame";if(!det)loadZX();let n=0;$("camOv").classList.add("on");try{await v.play()}catch(e){}
-  const c=document.createElement("canvas"),x=c.getContext("2d",{willReadFrequently:true});
+  const c=document.createElement("canvas"),x=c.getContext("2d",{willReadFrequently:true}),c2=document.createElement("canvas"),x2=c2.getContext("2d");
   const tick=async()=>{if(!camStream)return;
     try{if(v.readyState>=2){let r=null;
       if(det){const f=await det.detect(v);r=f[0]&&f[0].rawValue}
-      else if(window.jsQR){const s=Math.min(1,800/Math.max(v.videoWidth,v.videoHeight));c.width=v.videoWidth*s;c.height=v.videoHeight*s;x.drawImage(v,0,0,c.width,c.height);const q=jsQR(x.getImageData(0,0,c.width,c.height).data,c.width,c.height);r=q&&q.data;if(!r&&zx&&(n++%2===0))r=zxRead(c)}
+      else if(window.jsQR){const s=Math.min(1,800/Math.max(v.videoWidth,v.videoHeight));c.width=v.videoWidth*s;c.height=v.videoHeight*s;x.drawImage(v,0,0,c.width,c.height);const q=jsQR(x.getImageData(0,0,c.width,c.height).data,c.width,c.height);r=q&&q.data;if(!r&&zx){const f=Math.min(1,1280/Math.max(v.videoWidth,v.videoHeight));c2.width=v.videoWidth*f;c2.height=v.videoHeight*f;x2.drawImage(v,0,0,c2.width,c2.height);r=zxScan(c2,2)}}
       if(r){if(gotQR(r)){stopCam();return}$("camMsg").textContent="Code read, but no participant matches it."}}}catch(e){}
     camLoop=setTimeout(tick,180)};
   tick()};
 $("qr").onchange=async e=>{const f=e.target.files[0];e.target.value="";if(!f)return;const msg=$("qrmsg");msg.textContent="Reading QR code…";
   try{const img=await createImageBitmap(f),s=Math.min(1,1400/Math.max(img.width,img.height)),c=document.createElement("canvas");c.width=img.width*s;c.height=img.height*s;const x=c.getContext("2d");x.drawImage(img,0,0,c.width,c.height);
     const r=window.jsQR&&jsQR(x.getImageData(0,0,c.width,c.height).data,c.width,c.height);let t=r&&r.data;
-    if(!t){await loadZX();t=zxRead(c)}
+    if(!t){await loadZX();t=zxScan(c,ZXC.length)}
     if(!t){msg.textContent="No QR code or barcode found. Try again closer, or type the bib.";return}
     gotQR(t);
   }catch(err){msg.textContent="Could not read the photo. Type the bib instead."}};
