@@ -138,7 +138,7 @@ label.btn input{position:absolute;opacity:0;width:1px;height:1px}
 .choice button{min-height:76px;font:700 22px/1.1 "Barlow Condensed",sans-serif;border-width:2px}
 .choice button[aria-pressed=true]{background:var(--red);border-color:var(--red);color:#fff}
 .swl button[disabled]{opacity:.5}
-.chipMem{list-style:none;margin:14px 0 0;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:8px;text-align:start}
+.chipMem{list-style:none;margin:8px 0 0;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:8px;text-align:start}
 .chipMem li{display:flex;align-items:center;gap:10px;padding:8px 10px;border:1.5px solid var(--line);border-radius:12px;font-size:20px}
 .chipMem .bb{font:800 22px/1 "Barlow Condensed",sans-serif;min-width:2.8em;text-align:center}.chipMem .nm{flex:1;min-width:0;overflow-wrap:anywhere;line-height:1.15}
 .chipMem li.me{border-color:var(--ink);border-width:2.5px}.chipMem .tk{font-size:13px;font-weight:700;color:var(--mute);white-space:nowrap}
@@ -351,10 +351,10 @@ body.settings #gear{background:var(--red);color:#fff}
   <div class="sheet" style="width:min(680px,100%);text-align:center;position:relative">
     <button type="button" id="chipClose" aria-label="Close" style="position:absolute;top:10px;right:10px;width:56px;height:56px;min-height:56px;padding:0;border-radius:50%;display:grid;place-items:center"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
     <h2 id="chipTeam" style="font-size:clamp(40px,6vw,60px);margin:6px 60px 6px"></h2>
-    <p class="sub" id="chipSub" style="margin:0 0 6px"></p>
+    <p class="sub" id="chipSub" style="margin:0;font-weight:700;font-size:17px"></p>
+    <ul id="chipMembers" class="chipMem"></ul>
     <div id="chipCode" style="font:800 min(30vw,150px)/1 'Barlow Condensed',sans-serif;letter-spacing:.02em;margin:10px 0"></div>
     <div id="chipState" style="font-size:20px;min-height:1.4em"></div>
-    <ul id="chipMembers" class="chipMem"></ul>
     <div class="acts" style="justify-content:center;margin-top:16px"><button type="button" class="ghost" id="chipUndo" hidden>Undo</button><button type="button" class="pri" id="chipGive" style="min-width:240px;min-height:64px;font-size:22px">Chip handed over</button></div>
   </div>
 </div>
@@ -514,7 +514,7 @@ body.settings #gear{background:var(--red);color:#fff}
 "use strict";
 {
 let syncState=null,EV=null;
-const APP_VERSION="2.0.2";
+const APP_VERSION="2.0.3";
 const SIZES=["XS","S","M","L","XL","XXL"];
 const FIELDS=[["dob","Date of birth",'type="date"'],["nat","Nation",'autocapitalize="characters" placeholder="e.g. QATAR"'],["qid","QID",'inputmode="numeric"'],["ice","ICE person",'placeholder="Emergency contact name"'],["icePhone","ICE phone",'type="tel" placeholder="+974…"'],["email","Email",'type="email" placeholder="name@example.com"'],["phone","Phone",'type="tel" placeholder="+974…"']];
 const FK=FIELDS.map(f=>f[0]);
@@ -943,7 +943,7 @@ function cpGot(text){const m=String(text).match(/\d+/g),bib=m&&+m[m.length-1],p=
   if(!p.team){e.textContent=`#${p.bib} ${fullName(p)} is solo: chips are for teams only.`;return false}
   e.textContent="";$("cpQ").value="";renderChips();chipOpen(p.bib);return true}
 function chipShow(p){const M=teamOf(p).filter(m=>!m.gone),first=M.find(m=>m.chipTime),by=first&&byBib(first.chipBy),code=chipCode(p.chipId||(M.find(m=>m.chipId)||{}).chipId);
-  $("chipTeam").textContent=p.team;$("chipSub").textContent=`#${p.bib} ${fullName(p)} · ${M.length} members`;
+  $("chipTeam").textContent=p.team;$("chipSub").textContent=`${M.length} ${M.length===1?"member":"members"}`;
   $("chipCode").textContent=code||"No chip";$("chipCode").style.color=code?"":"var(--mute)";
   $("chipMembers").innerHTML=M.map(m=>`<li><span class="bb" style="${bibStyle(m)}">${m.bib}</span><span class="nm">${esc(fullName(m))}</span>${first&&m.bib===first.chipBy?'<span class="tk">took the chip</span>':""}</li>`).join("");
   const g=$("chipGive"),u=$("chipUndo"),st=$("chipState");g.dataset.sure="";u.dataset.sure="";u.textContent="Undo";
