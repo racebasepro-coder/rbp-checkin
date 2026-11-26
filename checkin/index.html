@@ -351,7 +351,7 @@ body.settings #gear{background:var(--red);color:#fff}
   <div class="sheet" style="width:min(680px,100%);text-align:center;position:relative">
     <button type="button" id="chipClose" aria-label="Close" style="position:absolute;top:10px;right:10px;width:56px;height:56px;min-height:56px;padding:0;border-radius:50%;display:grid;place-items:center"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
     <h2 id="chipTeam" style="font-size:clamp(40px,6vw,60px);margin:6px 60px 6px"></h2>
-    <div id="chipWho" style="color:var(--red);font:800 clamp(34px,5vw,48px)/1.05 'Barlow Condensed',sans-serif;margin:4px 20px 10px;overflow-wrap:anywhere"></div>
+    <div id="chipWho" style="color:var(--red);font:800 clamp(26px,3.6vw,34px)/1.05 'Barlow Condensed',sans-serif;margin:2px 10px 8px;overflow-wrap:anywhere"></div>
     <p class="sub" id="chipSub" style="margin:0;font-weight:700;font-size:17px"></p>
     <ul id="chipMembers" class="chipMem"></ul>
     <div id="chipCode" style="font:800 min(30vw,150px)/1 'Barlow Condensed',sans-serif;letter-spacing:.02em;margin:10px 0"></div>
@@ -515,7 +515,7 @@ body.settings #gear{background:var(--red);color:#fff}
 "use strict";
 {
 let syncState=null,EV=null;
-const APP_VERSION="2.0.5";
+const APP_VERSION="2.0.6";
 const SIZES=["XS","S","M","L","XL","XXL"];
 const FIELDS=[["dob","Date of birth",'type="date"'],["nat","Nation",'autocapitalize="characters" placeholder="e.g. QATAR"'],["qid","QID",'inputmode="numeric"'],["ice","ICE person",'placeholder="Emergency contact name"'],["icePhone","ICE phone",'type="tel" placeholder="+974…"'],["email","Email",'type="email" placeholder="name@example.com"'],["phone","Phone",'type="tel" placeholder="+974…"']];
 const FK=FIELDS.map(f=>f[0]);
