@@ -13,6 +13,7 @@ const WRITE_DEFAULT: Record<string, string> = {
   merchDesk: "PackageDevice", qid: "QID", qv: "QatariVerified", dob: "DateOfBirth", nat: "Nation",
   ice: "ICEName", icePhone: "ICEPhone", phone: "Phone", email: "Email", deleted: "CheckinDeleted",
   first: "Firstname", last: "Lastname", team: "Club", sex: "Gender", size: "T-Shirt Size", contest: "Contest",
+  chipTime: "TeamChipTime", chipBy: "TeamChipBib", chipDesk: "TeamChipDevice",
 };
 // Our column <- RR14 list column. The first name found in the list wins; Settings can override (readMap).
 const READ_ALIASES: Record<string, string[]> = {
@@ -23,6 +24,7 @@ const READ_ALIASES: Record<string, string[]> = {
   shirt_size: ["TShirt", "T-Shirt Size", "TShirtSize", "Shirt", "T-Shirt"], qid: ["QID"],
   email: ["Email", "EMail", "E-Mail"], phone: ["Phone", "CellPhone", "Mobile"],
   ice_name: ["ICEName", "ICE Name"], ice_phone: ["ICEPhone", "ICENumber", "ICE Phone"],
+  chip_id: ["TeamChipID", "TeamChipId", "ChipCode", "TeamChip"],
 };
 // Which app key each read column corresponds to, so a field renamed in Settings is read under the same name.
 const READ_FROM_APP: Record<string, string> = {
@@ -98,7 +100,7 @@ async function pull(ev: string, cfg: Record<string, any>, LIST_URL?: string | nu
       sex: /^(F|W|Ž|Z)/.test(sex) ? "W" : sex ? "M" : null,
       nation: g("nation").toUpperCase(), dob, yob,
       age_group: g("age_group"), shirt_size: g("shirt_size").toUpperCase(), qid: g("qid"), email: g("email"),
-      phone: g("phone"), ice_name: g("ice_name"), ice_phone: g("ice_phone"), rr_synced_at: now, gone_at: null,
+      phone: g("phone"), ice_name: g("ice_name"), ice_phone: g("ice_phone"), chip_id: g("chip_id"), rr_synced_at: now, gone_at: null,
     };
   // Bibs without a name are empty slots in RR14 (not yet sold or assigned): skip them.
   }).filter((p) => Number.isFinite(p.bib) && p.bib > 0 && (p.first_name || p.last_name) && !hold.has(p.bib));
