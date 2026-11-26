@@ -138,9 +138,9 @@ label.btn input{position:absolute;opacity:0;width:1px;height:1px}
 .choice button{min-height:76px;font:700 22px/1.1 "Barlow Condensed",sans-serif;border-width:2px}
 .choice button[aria-pressed=true]{background:var(--red);border-color:var(--red);color:#fff}
 .swl button[disabled]{opacity:.5}
-.chipMem{list-style:none;margin:8px 0 0;padding:0;display:grid;grid-template-columns:1fr 1fr;grid-auto-flow:column;gap:8px;text-align:start}
-.chipMem li{display:flex;align-items:center;gap:10px;padding:8px 10px;border:1.5px solid var(--line);border-radius:12px;font-size:20px}
-.chipMem .bb{font:800 22px/1 "Barlow Condensed",sans-serif;min-width:2.8em;text-align:center}.chipMem .nm{flex:1;min-width:0;overflow-wrap:anywhere;line-height:1.15}
+.chipMem{list-style:none;margin:8px 0 0;padding:0;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-auto-flow:column;gap:8px;text-align:start}
+.chipMem li{display:flex;align-items:center;gap:8px;padding:7px 8px;border:1.5px solid var(--line);border-radius:12px;font-size:16px;min-width:0}
+.chipMem .bb{font:800 19px/1 "Barlow Condensed",sans-serif;min-width:2.8em;text-align:center}.chipMem .nm{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:-.01em}
 .chipMem li.me{border-color:var(--ink);border-width:2.5px}.chipMem .tk{font-size:13px;font-weight:700;color:var(--mute);white-space:nowrap}
 #mates{margin-top:8px}
 .mem{display:flex;gap:12px;align-items:center;padding:8px 4px;border-top:1px solid var(--line);min-height:52px}
@@ -271,7 +271,7 @@ body.settings #gear{background:var(--red);color:#fff}
     <div class="grid">
       <div>
         <div class="sbar">
-          <input class="search" id="q" type="search" placeholder="Name, bib or team" autocomplete="off" aria-label="Search participants">
+          <input class="search" id="q" type="search" placeholder="Name, bib or team" autocomplete="off" inputmode="numeric" aria-label="Search participants">
           <button type="button" class="btn" id="scanBtn" title="Scan the participant's QR code or barcode with the back camera"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7V3h4M17 3h4v4M21 17v4h-4M7 21H3v-4"/><rect x="8" y="8" width="8" height="8"/></svg>Scan QR / barcode</button><input type="file" id="qr" accept="image/*" capture="environment" hidden>
         </div>
         <p class="small" id="qrmsg">A USB or Bluetooth barcode scanner also works: it types into the search box.</p>
@@ -293,7 +293,7 @@ body.settings #gear{background:var(--red);color:#fff}
   <section class="view" id="v-chips">
     <h2 style="margin:0 0 4px">Team chips</h2>
     <p class="sub" style="margin:0 0 14px">One chip per team. Scan or type the bib of any team member; the team's chip (TeamChipID from RR14) pops up.</p>
-    <div class="panel"><div style="display:flex;gap:10px"><input class="search" id="cpQ" type="search" placeholder="Bib, name or team" autocomplete="off" inputmode="search" style="flex:1"><button type="button" class="btn" id="cpScan" style="white-space:nowrap">Scan QR / barcode</button></div>
+    <div class="panel"><div style="display:flex;gap:10px"><input class="search" id="cpQ" type="search" placeholder="Bib, name or team" autocomplete="off" inputmode="numeric" style="flex:1"><button type="button" class="btn" id="cpScan" style="white-space:nowrap">Scan QR / barcode</button></div>
       <p class="small" id="cpMsg"></p><ul class="swl" id="cpL"></ul></div>
     <div class="panel"><h3 style="margin:0 0 8px">Chips handed out <span class="sub" id="cpCount"></span></h3><div class="scroll" style="max-height:44vh;overflow:auto"><table id="cpHist"></table></div></div>
   </section>
@@ -306,7 +306,7 @@ body.settings #gear{background:var(--red);color:#fff}
   <section class="view" id="v-swap">
     <h2 style="margin:0 0 4px">Change participant</h2>
     <p class="sub" style="margin:0 0 14px">A bib goes to another person: pick the bib, photograph the new person's QID (both sides) or type the data, then save. RR14 gets the new data within 30 seconds. Pickup and package status stay on the bib.</p>
-    <div class="panel"><h3>Bib</h3><div style="display:flex;gap:10px"><input class="search" id="chQ" type="search" placeholder="Bib or name" autocomplete="off" style="flex:1"><button type="button" class="btn" id="chScanBib" style="white-space:nowrap">Scan QR / barcode</button></div><p class="small" id="chScanMsg"></p><ul class="swl" id="chL"></ul></div>
+    <div class="panel"><h3>Bib</h3><div style="display:flex;gap:10px"><input class="search" id="chQ" type="search" placeholder="Bib or name" autocomplete="off" inputmode="numeric" style="flex:1"><button type="button" class="btn" id="chScanBib" style="white-space:nowrap">Scan QR / barcode</button></div><p class="small" id="chScanMsg"></p><ul class="swl" id="chL"></ul></div>
     <div class="panel" id="chForm" hidden></div>
     <p id="chMsg" class="small" style="min-height:1.5em"></p>
   </section>
@@ -515,7 +515,7 @@ body.settings #gear{background:var(--red);color:#fff}
 "use strict";
 {
 let syncState=null,EV=null;
-const APP_VERSION="2.0.6";
+const APP_VERSION="2.0.7";
 const SIZES=["XS","S","M","L","XL","XXL"];
 const FIELDS=[["dob","Date of birth",'type="date"'],["nat","Nation",'autocapitalize="characters" placeholder="e.g. QATAR"'],["qid","QID",'inputmode="numeric"'],["ice","ICE person",'placeholder="Emergency contact name"'],["icePhone","ICE phone",'type="tel" placeholder="+974…"'],["email","Email",'type="email" placeholder="name@example.com"'],["phone","Phone",'type="tel" placeholder="+974…"']];
 const FK=FIELDS.map(f=>f[0]);
@@ -944,9 +944,9 @@ function cpGot(text){const m=String(text).match(/\d+/g),bib=m&&+m[m.length-1],p=
   if(!p.team){e.textContent=`#${p.bib} ${fullName(p)} is solo: chips are for teams only.`;return false}
   e.textContent="";$("cpQ").value="";renderChips();chipOpen(p.bib);return true}
 function chipShow(p){const M=teamOf(p).filter(m=>!m.gone),first=M.find(m=>m.chipTime),by=first&&byBib(first.chipBy),code=chipCode(p.chipId||(M.find(m=>m.chipId)||{}).chipId);
-  $("chipTeam").textContent=p.team;$("chipWho").textContent=`${p.bib} ${fullName(p)}`;$("chipSub").textContent=`${M.length} ${M.length===1?"member":"members"}`;
+  $("chipTeam").textContent=p.team;$("chipWho").innerHTML=`<span style="color:light-dark(#4a4a46,#b5b5ae)">${p.bib}</span> ${esc(fullName(p))}`;$("chipSub").textContent=`${M.length} ${M.length===1?"member":"members"}`;
   $("chipCode").textContent=code||"No chip";$("chipCode").style.color=code?"":"var(--mute)";
-  $("chipMembers").style.gridTemplateRows=`repeat(${Math.max(1,Math.ceil(M.length/2))},auto)`;$("chipMembers").innerHTML=M.map(m=>`<li${m.bib===p.bib?' class="me" style="border-color:var(--red)"':""}><span class="bb" style="${bibStyle(m)}">${m.bib}</span><span class="nm">${esc(fullName(m))}</span>${first&&m.bib===first.chipBy?'<span class="tk">took the chip</span>':""}</li>`).join("");
+  $("chipMembers").style.gridTemplateRows=`repeat(${Math.max(1,Math.ceil(M.length/2))},auto)`;$("chipMembers").innerHTML=M.map(m=>`<li${m.bib===p.bib?' class="me" style="border-color:var(--red)"':""}><span class="bb" style="${bibStyle(m)}">${m.bib}</span><span class="nm"${fullName(m).length>24?' style="font-size:13px"':""}>${esc(fullName(m))}</span>${first&&m.bib===first.chipBy?'<span class="tk">took the chip</span>':""}</li>`).join("");
   const g=$("chipGive"),u=$("chipUndo"),st=$("chipState");g.dataset.sure="";u.dataset.sure="";u.textContent="Undo";
   if(first){st.innerHTML=`<b style="color:var(--red)">Chip already taken</b><br>Bib <b>${esc(first.chipBy)}</b> ${by?esc(fullName(by)):""} took the chip at <b>${hm(first.chipTime)}</b>${first.chipDesk?" · "+tabTag(first.chipDesk):""}`;g.hidden=true;u.hidden=false}
   else if(!code){st.innerHTML='<b style="color:var(--red)">No TeamChipID in RR14 for this team.</b> Add it in RR14; it shows here within 30 seconds.';g.hidden=true;u.hidden=true}
