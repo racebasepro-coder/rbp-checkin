@@ -518,7 +518,7 @@ body.settings #gear{background:var(--red);color:#fff}
 "use strict";
 {
 let syncState=null,EV=null;
-const APP_VERSION="2.0.13";
+const APP_VERSION="2.0.14";
 const SIZES=["XS","S","M","L","XL","XXL"];
 const FIELDS=[["dob","Date of birth",'type="date"'],["nat","Nation",'autocapitalize="characters" placeholder="e.g. QATAR"'],["qid","QID",'inputmode="numeric"'],["ice","ICE person",'placeholder="Emergency contact name"'],["icePhone","ICE phone",'type="tel" placeholder="+974…"'],["email","Email",'type="email" placeholder="name@example.com"'],["phone","Phone",'type="tel" placeholder="+974…"']];
 const FK=FIELDS.map(f=>f[0]);
@@ -1212,12 +1212,17 @@ function render(){$("slogan").textContent=cfg.slogan||"Made with Passion. Driven
 /* ---- events ---- */
 $("q").oninput=()=>{renderList();const v=$("q").value.trim();if(/^\d+$/.test(v)&&byBib(+v)&&String(byBib(+v).bib)===v&&!P.some(p=>String(p.bib).startsWith(v)&&p.bib!==+v))select(+v)};
 /* USB/Bluetooth barcode scanner: it types the code fast and presses Enter. Caught even when the search box has no focus. */
-let kb="",kbT=0;
+let kb="",kbT=0,kbIdle=null;
+/* Bluetooth scanners on iPad can be slower than USB (up to ~200 ms per character), may end with Tab or with nothing, and a scan while the chip popup is open means the next team. */
+function kbFire(){clearTimeout(kbIdle);const code=kb;kb="";if(!code)return;if($("chipOv").classList.contains("on")&&location.hash==="#chips"){$("chipOv").classList.remove("on");cpBib=null}gotQR(code)}
 document.addEventListener("keydown",e=>{const t=e.target,inField=t&&(t.tagName==="INPUT"||t.tagName==="TEXTAREA"||t.tagName==="SELECT"||t.isContentEditable);
-  if(inField||e.metaKey||e.ctrlKey||e.altKey||document.querySelector(".ov.on"))return;const v=location.hash.slice(1);if(v&&v!=="checkin"&&v!=="swap"&&v!=="chips")return;
-  const now=Date.now();if(now-kbT>80)kb="";kbT=now;
-  if(e.key==="Enter"){if(kb.length>=1){e.preventDefault();const code=kb;kb="";gotQR(code)}return}
-  if(e.key.length===1){kb+=e.key}});
+  const open=[...document.querySelectorAll(".ov.on")].filter(o=>o.id!=="chipOv");
+  if(inField||e.metaKey||e.ctrlKey||e.altKey||open.length)return;const v=location.hash.slice(1);if(v&&v!=="checkin"&&v!=="swap"&&v!=="chips")return;
+  const now=Date.now();if(now-kbT>300)kb="";kbT=now;
+  if(e.key==="Enter"||e.key==="Tab"){if(kb.length>=1){e.preventDefault();kbFire()}return}
+  if(e.key.length===1){kb+=e.key;clearTimeout(kbIdle);if(kb.length>=2&&/\d/.test(kb))kbIdle=setTimeout(kbFire,450)}});
+/* In a bib field a scanner that ends with Tab acts like Enter. */
+["q","cpQ","chQ"].forEach(id=>$(id).addEventListener("keydown",e=>{if(e.key==="Tab"&&/\d/.test(e.target.value)){e.preventDefault();e.target.dispatchEvent(new KeyboardEvent("keydown",{key:"Enter",bubbles:true,cancelable:true}))}}));
 $("q").onkeydown=e=>{if(e.key==="Enter"){const v=$("q").value.trim(),m=v.match(/\d+/g),b=m&&+m[m.length-1];if(b&&byBib(b))select(b);else{const f=$("res").querySelector("[data-bib]");if(f)select(+f.dataset.bib)}}};
 $("res").onclick=e=>{const b=e.target.closest("[data-bib]");if(b)select(+b.dataset.bib)};
 $("desk").onclick=e=>{const g=e.target.closest("[data-give]"),u=e.target.closest("[data-undo]");if(g){pend[g.dataset.give]=Date.now()+UNDO;renderMerch()}if(u){delete pend[u.dataset.undo];renderMerch()}};
