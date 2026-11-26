@@ -229,7 +229,7 @@ table{width:100%;border-collapse:collapse}th,td{padding:8px 6px;border-bottom:1p
 .small{font-size:13px;color:var(--mute)}
 .npad{position:fixed;left:50%;bottom:calc(10vh + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:30;display:none;grid-template-columns:repeat(3,106px);gap:9px;padding:11px;background:var(--paper);border:1.5px solid var(--line);border-radius:18px;box-shadow:0 8px 30px #0005;touch-action:manipulation;user-select:none;-webkit-user-select:none}
 .npad.on{display:grid}.npad button{min-height:70px;height:70px;padding:0;border-radius:13px;font:700 33px/1 "Barlow Condensed",sans-serif}
-.npad .k-ok{grid-column:1/-1;background:var(--red);color:#fff;border-color:var(--red);font-size:26px}.npad .k-s{font-size:20px}.npad.noabc [data-k="ABC"]{visibility:hidden}
+.npad .k-ok{grid-column:1/-1;background:var(--red);color:#fff;border-color:var(--red);font-size:26px}.npad .k-s{font-size:20px}.npad [data-k="ABC"]{font:600 14px/1 inherit;min-height:44px;height:44px;width:72%;align-self:center;justify-self:center;color:var(--mute)}
 .ov{position:fixed;inset:0;background:#000a;z-index:20;display:none;align-items:flex-start;justify-content:center;padding:4vh 12px;overflow:auto}
 .ov.on{display:flex}
 .sheet{background:var(--paper);border-radius:16px;padding:20px;width:min(760px,100%);border:2px solid var(--ink)}
@@ -518,7 +518,7 @@ body.settings #gear{background:var(--red);color:#fff}
 "use strict";
 {
 let syncState=null,EV=null;
-const APP_VERSION="2.0.12";
+const APP_VERSION="2.0.13";
 const SIZES=["XS","S","M","L","XL","XXL"];
 const FIELDS=[["dob","Date of birth",'type="date"'],["nat","Nation",'autocapitalize="characters" placeholder="e.g. QATAR"'],["qid","QID",'inputmode="numeric"'],["ice","ICE person",'placeholder="Emergency contact name"'],["icePhone","ICE phone",'type="tel" placeholder="+974…"'],["email","Email",'type="email" placeholder="name@example.com"'],["phone","Phone",'type="tel" placeholder="+974…"']];
 const FK=FIELDS.map(f=>f[0]);
@@ -1269,7 +1269,7 @@ else{
 const ids=["q","cpQ","chQ"],pad=document.getElementById("npad");let cur=null,abc=false;
 pad.innerHTML=["1","2","3","4","5","6","7","8","9","ABC","0","⌫"].map(k=>`<button type="button" data-k="${k}" class="${k.length>1?"k-s":""}">${k}</button>`).join("")+'<button type="button" class="k-ok" data-k="OK">OK</button>';
 ids.forEach(id=>{const el=document.getElementById(id);if(!el)return;el.setAttribute("inputmode","none");
-  el.addEventListener("focus",()=>{cur=el;pad.classList.toggle("noabc",id==="cpQ");if(!abc)pad.classList.add("on")});
+  el.addEventListener("focus",()=>{cur=el;if(!abc)pad.classList.add("on")});
   el.addEventListener("blur",()=>{setTimeout(()=>{if(document.activeElement!==el){if(abc){abc=false;el.setAttribute("inputmode","none")}if(!ids.includes(document.activeElement&&document.activeElement.id))pad.classList.remove("on")}},0)});
   el.addEventListener("pointerdown",()=>{if(!abc&&document.activeElement===el)pad.classList.add("on")})});
 pad.addEventListener("pointerdown",e=>e.preventDefault());pad.addEventListener("mousedown",e=>e.preventDefault());
