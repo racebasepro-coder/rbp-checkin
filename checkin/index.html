@@ -230,6 +230,9 @@ table{width:100%;border-collapse:collapse}th,td{padding:8px 6px;border-bottom:1p
 .npad{position:fixed;left:50%;bottom:calc(10vh + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:30;display:none;grid-template-columns:repeat(3,106px);gap:9px;padding:11px;background:var(--paper);border:1.5px solid var(--line);border-radius:18px;box-shadow:0 8px 30px #0005;touch-action:manipulation;user-select:none;-webkit-user-select:none}
 .npad.on{display:grid}.npad button{min-height:70px;height:70px;padding:0;border-radius:13px;font:700 33px/1 "Barlow Condensed",sans-serif}
 .npad .k-ok{grid-column:1/-1;background:var(--red);color:#fff;border-color:var(--red);font-size:26px}.npad .k-s{font-size:20px}.npad [data-k="ABC"]{font:600 14px/1 inherit;min-height:44px;height:44px;width:72%;align-self:center;justify-self:center;color:var(--mute)}
+.mdr{margin-top:10px;padding:12px 14px;border-radius:14px;border:2px solid var(--line)}.mdr h3{margin:0 0 2px;font-size:26px}.mdr .st{font-size:19px;font-weight:700;margin:6px 0 8px}
+.mdPick{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px}.mdPick button{display:flex;align-items:center;gap:10px;min-height:64px;padding:8px 10px;border-radius:14px;text-align:left;font-size:16px}
+.mdPick .bb{font:800 26px/1 "Barlow Condensed",sans-serif;min-width:2.6em;text-align:center;padding:6px;border-radius:10px;background:#7b1e2e;color:#fff}.mdPick .nm{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .mdg{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
 .md{position:relative;overflow:hidden;min-height:118px;padding:10px 8px 12px;border:0;border-radius:16px;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;text-align:center;touch-action:manipulation;transition:background .25s}
 .md.t{background:#7b1e2e}.md.s{background:#1d4ed8}.md .n{font:800 54px/1 "Barlow Condensed",sans-serif}.md .n small{font-size:20px;font-weight:700;margin-left:4px}
@@ -314,6 +317,7 @@ body.settings #gear{background:var(--red);color:#fff}
   <section class="view" id="v-medals">
     <div style="display:flex;align-items:baseline;gap:14px;flex-wrap:wrap"><h2 style="margin:0">Medals</h2><span class="sub" id="mdKpi"></span></div>
     <p class="sub" style="margin:4px 0 12px">Newest finishers on top. Tap a card when the medal is handed over: it turns grey, and after 5 seconds it moves down to Given. Tap it again within the 5 seconds to undo.</p>
+    <div class="panel" style="margin-bottom:12px"><input class="search" id="mdQ" type="search" placeholder="Bib of any team member: who took the medals?" autocomplete="off" inputmode="numeric"><div id="mdR"></div></div>
     <p class="note warn" id="mdMsg" hidden></p>
     <div class="mdg" id="mdW"></div>
     <h3 style="margin:22px 0 8px">Given <span class="sub" id="mdGc"></span></h3>
@@ -369,6 +373,14 @@ body.settings #gear{background:var(--red);color:#fff}
   </div>
 </div>
 
+<div class="ov" id="mdOv" role="dialog" aria-modal="true" aria-labelledby="mdTeam">
+  <div class="sheet" style="width:min(680px,100%);text-align:center;position:relative">
+    <button type="button" id="mdX" aria-label="Close" style="position:absolute;top:10px;right:10px;width:56px;height:56px;min-height:56px;padding:0;border-radius:50%;display:grid;place-items:center"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+    <h2 id="mdTeam" style="font-size:clamp(32px,5vw,48px);margin:6px 60px 2px;color:#7b1e2e"></h2>
+    <p class="sub" id="mdSub" style="margin:0 0 12px;font-size:17px"></p>
+    <div class="mdPick" id="mdPick"></div>
+  </div>
+</div>
 <div class="ov" id="chipOv" role="dialog" aria-modal="true" aria-labelledby="chipTeam">
   <div class="sheet" style="width:min(680px,100%);text-align:center;position:relative">
     <button type="button" id="chipClose" aria-label="Close" style="position:absolute;top:10px;right:10px;width:56px;height:56px;min-height:56px;padding:0;border-radius:50%;display:grid;place-items:center"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
@@ -538,7 +550,7 @@ body.settings #gear{background:var(--red);color:#fff}
 "use strict";
 {
 let syncState=null,EV=null;
-const APP_VERSION="2.1.0";
+const APP_VERSION="2.1.2";
 const SIZES=["XS","S","M","L","XL","XXL"];
 const FIELDS=[["dob","Date of birth",'type="date"'],["nat","Nation",'autocapitalize="characters" placeholder="e.g. QATAR"'],["qid","QID",'inputmode="numeric"'],["ice","ICE person",'placeholder="Emergency contact name"'],["icePhone","ICE phone",'type="tel" placeholder="+974…"'],["email","Email",'type="email" placeholder="name@example.com"'],["phone","Phone",'type="tel" placeholder="+974…"']];
 const FK=FIELDS.map(f=>f[0]);
@@ -990,24 +1002,52 @@ $("cpQ").oninput=renderChips;
 $("cpQ").addEventListener("keydown",e=>{if(e.key!=="Enter")return;const v=e.target.value.trim();if(/\d/.test(v)&&!/\s/.test(v)){e.preventDefault();cpGot(v)}else{const f=$("cpL").querySelector("[data-cp]");if(f){e.preventDefault();cpGot(f.dataset.cp)}}});
 /* ---- Medals: finishers from RR14 (checkin_finishers, pulled every 10 s). Team cards are maroon with the number of members (= medals), solo cards blue with the bib. ---- */
 let F=[];const mdPend={};
-const finRow=r=>({bib:r.bib,tod:r.finish_tod,sec:r.finish_sec,members:r.members||1,name:r.name||"",team:r.team||"",medal:r.medal_at,mdesk:r.medal_device,gone:!!r.gone_at});
+const finRow=r=>({bib:r.bib,tod:r.finish_tod,sec:r.finish_sec,members:r.members||1,name:r.name||"",team:r.team||"",medal:r.medal_at,mdesk:r.medal_device,mby:r.medal_by,gone:!!r.gone_at});
 async function loadFin(){if(!EV){F=[];return}const out=[];for(let i=0;;i+=1000){const{data,error}=await sb.from("checkin_finishers").select("*").eq("event_id",EV.id).order("bib").range(i,i+999);if(error)throw error;out.push(...(data||[]));if(!data||data.length<1000)break}F=out.map(finRow).filter(f=>!f.gone)}
+function finMembers(f){const q=byBib(f.bib),tm=(q&&q.team)||f.team;return tm?P.filter(x=>x.team===tm&&!x.gone).sort((a,b)=>a.bib-b.bib):[]}
+const byTxt=f=>{if(!f.mby)return"";const q=byBib(f.mby);return `#${f.mby}${q?" "+esc(fullName(q)):""}`};
 function finTeam(f){const p=byBib(f.bib);return f.members>1||!!(p&&p.team)}
 function finLabel(f){const p=byBib(f.bib);return finTeam(f)?(f.team||(p&&p.team)||f.name):(f.name||(p?fullName(p):""))}
 const tod=f=>String(f.tod||"").replace(/\.\d+$/,"");
-function renderMedals(){const W=F.filter(f=>!f.medal).sort((a,b)=>(b.sec||0)-(a.sec||0)),G=F.filter(f=>f.medal).sort((a,b)=>String(b.medal).localeCompare(String(a.medal)));
+function renderMedals(){if($("mdQ").value)mdLook();const W=F.filter(f=>!f.medal).sort((a,b)=>(b.sec||0)-(a.sec||0)),G=F.filter(f=>f.medal).sort((a,b)=>String(b.medal).localeCompare(String(a.medal)));
   const med=L=>L.reduce((s,f)=>s+(finTeam(f)?f.members:1),0);
   $("mdKpi").textContent=`${F.length} finished · ${W.length} waiting (${med(W)} medals) · ${med(G)} medals given`;
   $("mdW").innerHTML=W.length?W.map(f=>{const t=finTeam(f);return `<button type="button" class="md ${t?"t":"s"}${mdPend[f.bib]?" pend":""}" ${mdPend[f.bib]?`style="--d:-${((Date.now()-mdPend[f.bib].at)/1000).toFixed(2)}s"`:""} data-md="${f.bib}" aria-label="${t?f.members+" medals for team "+esc(finLabel(f)):"Medal for bib "+f.bib}"><span class="n">${t?`${f.members}<small>×</small>`:f.bib}</span><span class="l">${t?"#"+f.bib+" ":""}${esc(finLabel(f))}</span><span class="tm">${esc(tod(f))}</span><span class="u">Tap to undo</span></button>`}).join(""):'<p class="sub">Nobody waiting for a medal.</p>';
   $("mdGc").textContent=G.length?`· ${G.length}`:"";
-  $("mdG").innerHTML=G.slice(0,300).map(f=>{const t=finTeam(f);return `<li><button type="button" data-mg="${f.bib}"><span class="bb">${f.bib}</span><span class="nm">${t?f.members+"× · ":""}${esc(finLabel(f))}</span><span>${hm(f.medal)}</span>${f.mdesk?tabTag(f.mdesk):""}</button></li>`}).join("")}
-async function mdCommit(bib){delete mdPend[bib];const f=F.find(x=>x.bib===bib);
-  const{error}=await sb.rpc("checkin_medal",{p_event:EV.id,p_bib:bib,p_device:device||"",p_on:true});
-  if(error){$("mdMsg").hidden=false;$("mdMsg").textContent=`Bib ${bib}: ${error.message}`}else if(f){f.medal=f.medal||new Date().toISOString();f.mdesk=f.mdesk||device}
+  $("mdG").innerHTML=G.slice(0,300).map(f=>{const t=finTeam(f);return `<li><button type="button" data-mg="${f.bib}"><span class="bb">${f.bib}</span><span class="nm">${t?f.members+"× · ":""}${esc(finLabel(f))}${t&&f.mby?" · to "+byTxt(f):""}</span><span>${hm(f.medal)}</span>${f.mdesk?tabTag(f.mdesk):""}</button></li>`}).join("")}
+/* Look up a bib: the team's finish and who handed over its medals. */
+function finOf(p){if(!p)return null;const own=F.find(f=>f.bib===p.bib);if(own||!p.team)return own||null;
+  return F.find(f=>{const q=byBib(f.bib);return(q&&q.team===p.team)||(f.team&&f.team===p.team)})||null}
+function mdLook(){const v=$("mdQ").value.trim(),r=$("mdR");if(!v){r.innerHTML="";return}
+  const m=v.match(/\d+/g),bib=m&&+m[m.length-1],p=bib&&byBib(bib),f0=bib&&F.find(f=>f.bib===bib);
+  if(!p&&!f0){r.innerHTML=`<div class="mdr"><p class="sub" style="margin:0">No participant with bib ${esc(v)}.</p></div>`;return}
+  const f=f0||finOf(p),team=p?p.team:(f&&f.team)||"",M=p&&p.team?teamOf(p).filter(x=>!x.gone):p?[p]:[];
+  let st;if(!f)st=`<div class="st" style="color:var(--mute)">Not finished yet</div>`;
+  else if(f.medal)st=`<div class="st" style="color:var(--ok)">${team?f.members+" medals":"Medal"} handed over at ${hm(f.medal)}${team&&f.mby?" to "+byTxt(f):""}${f.mdesk?" · "+tabTag(f.mdesk):""}</div><div class="sub">Finished ${esc(tod(f))}${f.bib!==bib?" · team bib "+f.bib:""}</div>`;
+  else st=`<div class="st" style="color:var(--red)">Finished ${esc(tod(f))}, ${team?"medals":"medal"} not handed over yet</div><button type="button" class="pri" data-mdq="${f.bib}" style="min-height:52px">${team?"Hand over "+f.members+" medals":"Hand over the medal"}</button>`;
+  r.innerHTML=`<div class="mdr" style="border-color:${team?"#7b1e2e":"#1d4ed8"}"><h3>${esc(team||(p?fullName(p):finLabel(f)))}</h3><div class="sub">${team?`${M.length} members · bib ${bib}${p?" "+esc(fullName(p)):""}`:`bib ${bib}`}</div>${st}${M.length>1?`<ul class="chipMem" style="grid-template-columns:repeat(auto-fill,minmax(220px,1fr))">${M.map(x=>`<li${x.bib===bib?' style="border-color:var(--ink)"':""}><span class="bb" style="background:light-dark(#8a8a85,#5a5a56);color:#fff">${x.bib}</span><span class="nm">${esc(fullName(x))}</span></li>`).join("")}</ul>`:""}</div>`}
+$("mdQ").oninput=mdLook;
+$("mdQ").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();mdLook()}});
+$("mdR").addEventListener("click",async e=>{const b=e.target.closest("[data-mdq]");if(!b)return;const f=F.find(x=>x.bib===+b.dataset.mdq);if(f&&finTeam(f)){mdAsk(f);return}b.disabled=true;await mdCommit(+b.dataset.mdq,null);mdLook()});
+async function mdCommit(bib,by){delete mdPend[bib];const f=F.find(x=>x.bib===bib);
+  const{data,error}=await sb.rpc("checkin_medal",{p_event:EV.id,p_bib:bib,p_device:device||"",p_on:true,p_by:by||null});
+  if(error){$("mdMsg").hidden=false;$("mdMsg").textContent=`Bib ${bib}: ${error.message}`}else if(f){const d=data||{};f.medal=d.time||f.medal||new Date().toISOString();f.mdesk=d.device||f.mdesk||device;f.mby=d.by||by||bib;if(d.already){$("mdMsg").hidden=false;$("mdMsg").textContent=`Bib ${bib}: medals were already handed over at ${hm(d.time)}.`}}
   if(location.hash==="#medals")renderMedals()}
 $("mdW").addEventListener("click",e=>{const b=e.target.closest("[data-md]");if(!b)return;const bib=+b.dataset.md;$("mdMsg").hidden=true;
   if(mdPend[bib]){clearTimeout(mdPend[bib].t);delete mdPend[bib];b.classList.remove("pend");return}
-  mdPend[bib]={t:setTimeout(()=>mdCommit(bib),5000),at:Date.now()};b.classList.add("pend")});
+  const f=F.find(x=>x.bib===bib);if(f&&finTeam(f)){mdAsk(f);return}
+  mdStart(bib,null)});
+function mdStart(bib,by){mdPend[bib]={t:setTimeout(()=>mdCommit(bib,by),5000),at:Date.now()};if(location.hash==="#medals")renderMedals()}
+/* Team: the operator picks the member who takes the medals (stored and sent to RR14 as MedalBib). */
+let mdFor=null;
+function mdAsk(f){const M=finMembers(f);mdFor=f.bib;$("mdTeam").textContent=finLabel(f);
+  $("mdSub").textContent=`${f.members} medals · who takes them? Tap their bib.`;
+  $("mdPick").innerHTML=(M.length?M:[{bib:f.bib,first_name:finLabel(f),last_name:""}]).map(m=>`<button type="button" data-by="${m.bib}"><span class="bb">${m.bib}</span><span class="nm">${esc(fullName(m))}</span></button>`).join("");
+  $("mdOv").classList.add("on")}
+$("mdX").onclick=()=>{$("mdOv").classList.remove("on");mdFor=null};
+$("mdPick").addEventListener("click",e=>{const b=e.target.closest("[data-by]");if(!b||mdFor==null)return;const bib=mdFor;mdFor=null;$("mdOv").classList.remove("on");
+  if(location.hash==="#medals"&&$("mdQ").value&&!$("mdW").querySelector(`[data-md="${bib}"]`)){mdCommit(bib,+b.dataset.by);return}
+  mdStart(bib,+b.dataset.by)});
 $("mdG").addEventListener("click",async e=>{const b=e.target.closest("[data-mg]");if(!b)return;const bib=+b.dataset.mg;
   if(b.dataset.sure!=="1"){b.dataset.sure="1";b.querySelector(".nm").textContent="Tap again: take the medal back";setTimeout(()=>{if(b.isConnected&&location.hash==="#medals")renderMedals()},4000);return}
   const{error}=await sb.rpc("checkin_medal",{p_event:EV.id,p_bib:bib,p_device:device||"",p_on:false});
@@ -1142,7 +1182,7 @@ function zxCrop(src,fw,fh,rot){const W=src.width,H=src.height,w=Math.round(W*fw)
   if(rot){const w2=Math.round(H*fw),h2=Math.round(W*fh);c.width=w2;c.height=h2;x.translate(w2/2,h2/2);x.rotate(Math.PI/2);x.drawImage(src,(W-h2)/2,(H-w2)/2,h2,w2,-h2/2,-w2/2,h2,w2)}
   else{c.width=w;c.height=h;x.drawImage(src,(W-w)/2,(H-h)/2,w,h,0,0,w,h)}return c}
 function zxScan(src,n){if(!zx)return null;for(let k=0;k<n;k++){const [fw,fh,rot]=ZXC[zxI++%ZXC.length];const r=zxRead(fw===1&&fh===1?src:zxCrop(src,fw,fh,rot));if(r)return r}return null}
-function gotQR(text){if(location.hash==="#swap")return chGot(text);if(location.hash==="#chips")return cpGot(text);const msg=$("qrmsg"),m=String(text).match(/\d+/g),bib=m&&+m[m.length-1],p=bib&&byBib(bib);
+function gotQR(text){if(location.hash==="#swap")return chGot(text);if(location.hash==="#chips")return cpGot(text);if(location.hash==="#medals"){$("mdQ").value=String(text);mdLook();return true}const msg=$("qrmsg"),m=String(text).match(/\d+/g),bib=m&&+m[m.length-1],p=bib&&byBib(bib);
   if(p){msg.textContent=`Scanned bib ${bib}.`;$("q").value=String(bib);renderList();select(bib);return true}
   msg.textContent="Code read ("+String(text).slice(0,30)+"), but no participant matches it.";return false}
 function stopCam(){clearTimeout(camLoop);camLoop=null;if(camStream)camStream.getTracks().forEach(t=>t.stop());camStream=null;$("camV").srcObject=null;$("camOv").classList.remove("on")}
@@ -1268,12 +1308,12 @@ let kb="",kbT=0,kbIdle=null;
 function kbFire(){clearTimeout(kbIdle);const code=kb;kb="";if(!code)return;if($("chipOv").classList.contains("on")&&location.hash==="#chips"){$("chipOv").classList.remove("on");cpBib=null}gotQR(code)}
 document.addEventListener("keydown",e=>{const t=e.target,inField=t&&(t.tagName==="INPUT"||t.tagName==="TEXTAREA"||t.tagName==="SELECT"||t.isContentEditable);
   const open=[...document.querySelectorAll(".ov.on")].filter(o=>o.id!=="chipOv");
-  if(inField||e.metaKey||e.ctrlKey||e.altKey||open.length)return;const v=location.hash.slice(1);if(v&&v!=="checkin"&&v!=="swap"&&v!=="chips")return;
+  if(inField||e.metaKey||e.ctrlKey||e.altKey||open.length)return;const v=location.hash.slice(1);if(v&&v!=="checkin"&&v!=="swap"&&v!=="chips"&&v!=="medals")return;
   const now=Date.now();if(now-kbT>300)kb="";kbT=now;
   if(e.key==="Enter"||e.key==="Tab"){if(kb.length>=1){e.preventDefault();kbFire()}return}
   if(e.key.length===1){kb+=e.key;clearTimeout(kbIdle);if(kb.length>=2&&/\d/.test(kb))kbIdle=setTimeout(kbFire,450)}});
 /* In a bib field a scanner that ends with Tab acts like Enter. */
-["q","cpQ","chQ"].forEach(id=>$(id).addEventListener("keydown",e=>{if(e.key==="Tab"&&/\d/.test(e.target.value)){e.preventDefault();e.target.dispatchEvent(new KeyboardEvent("keydown",{key:"Enter",bubbles:true,cancelable:true}))}}));
+["q","cpQ","chQ","mdQ"].forEach(id=>$(id).addEventListener("keydown",e=>{if(e.key==="Tab"&&/\d/.test(e.target.value)){e.preventDefault();e.target.dispatchEvent(new KeyboardEvent("keydown",{key:"Enter",bubbles:true,cancelable:true}))}}));
 $("q").onkeydown=e=>{if(e.key==="Enter"){const v=$("q").value.trim(),m=v.match(/\d+/g),b=m&&+m[m.length-1];if(b&&byBib(b))select(b);else{const f=$("res").querySelector("[data-bib]");if(f)select(+f.dataset.bib)}}};
 $("res").onclick=e=>{const b=e.target.closest("[data-bib]");if(b)select(+b.dataset.bib)};
 $("desk").onclick=e=>{const g=e.target.closest("[data-give]"),u=e.target.closest("[data-undo]");if(g){pend[g.dataset.give]=Date.now()+UNDO;renderMerch()}if(u){delete pend[u.dataset.undo];renderMerch()}};
@@ -1324,7 +1364,7 @@ else{
 <div class="npad" id="npad" role="group" aria-label="Number pad"></div>
 <script>
 (()=>{const touch=(window.matchMedia&&matchMedia("(pointer:coarse)").matches)||navigator.maxTouchPoints>1;if(!touch)return;
-const ids=["q","cpQ","chQ"],pad=document.getElementById("npad");let cur=null,abc=false;
+const ids=["q","cpQ","chQ","mdQ"],pad=document.getElementById("npad");let cur=null,abc=false;
 pad.innerHTML=["1","2","3","4","5","6","7","8","9","ABC","0","⌫"].map(k=>`<button type="button" data-k="${k}" class="${k.length>1?"k-s":""}">${k}</button>`).join("")+'<button type="button" class="k-ok" data-k="OK">OK</button>';
 ids.forEach(id=>{const el=document.getElementById(id);if(!el)return;el.setAttribute("inputmode","none");
   el.addEventListener("focus",()=>{cur=el;if(!abc)pad.classList.add("on")});
