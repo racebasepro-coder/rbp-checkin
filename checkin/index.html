@@ -1050,7 +1050,7 @@ $("mdPick").addEventListener("click",e=>{const b=e.target.closest("[data-by]");i
   mdStart(bib,+b.dataset.by)});
 $("mdG").addEventListener("click",async e=>{const b=e.target.closest("[data-mg]");if(!b)return;const bib=+b.dataset.mg;
   if(b.dataset.sure!=="1"){b.dataset.sure="1";b.querySelector(".nm").textContent="Tap again: take the medal back";setTimeout(()=>{if(b.isConnected&&location.hash==="#medals")renderMedals()},4000);return}
-  const{error}=await sb.rpc("checkin_medal",{p_event:EV.id,p_bib:bib,p_device:device||"",p_on:false});
+  const{error}=await sb.rpc("checkin_medal",{p_event:EV.id,p_bib:bib,p_device:device||"",p_on:false,p_by:null});
   if(error){$("mdMsg").hidden=false;$("mdMsg").textContent=error.message;return}const f=F.find(x=>x.bib===bib);if(f){f.medal=null;f.mdesk=null}renderMedals()});
 $("cpL").onclick=e=>{const b=e.target.closest("[data-cp]");if(b)cpGot(b.dataset.cp)};
 $("cpScan").onclick=()=>$("scanBtn").click();

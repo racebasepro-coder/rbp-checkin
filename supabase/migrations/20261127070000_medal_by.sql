@@ -1,8 +1,8 @@
 alter table checkin_finishers add column if not exists medal_by integer;
-drop function if exists public.checkin_medal(text, integer, text, boolean);
+-- The older 4-argument checkin_medal stays in place (unused); the app always calls this 5-argument one.
 -- Medals handed over (or taken back). For a team the operator picks the member who takes them (p_by).
 -- RR14 gets MedalTime, MedalBib, MedalDevice on every member of the team (or on the solo bib).
-create or replace function public.checkin_medal(p_event text, p_bib integer, p_device text, p_on boolean default true, p_by integer default null)
+create or replace function public.checkin_medal(p_event text, p_bib integer, p_device text, p_on boolean, p_by integer)
 returns jsonb language plpgsql security definer set search_path = public as $$
 declare ev text := checkin_ev(p_event); f checkin_finishers; tm text; b integer;
   t text := to_char(now() at time zone 'Asia/Qatar', 'YYYY-MM-DD HH24:MI:SS');
