@@ -127,6 +127,51 @@ async function pull(ev: string, cfg: Record<string, any>, LIST_URL?: string | nu
   return { pulled: out.length, rows: rows.length, held: hold.size, gone, columns: [...present].slice(0, 30) };
 }
 
+
+// Medals: the RR14 finishers list (Bib, FinishTOD, Team Members). Runs on its own every 10 s (mode=finish).
+const FIN_ALIASES: Record<string, string[]> = {
+  bib: ["Bib", "BIB", "StartNo"], tod: ["FinishTOD", "Finish TOD", "FinishTime", "Finish"],
+  members: ["Team Members", "TeamMembers", "Members", "TeamSize"],
+  name: ["DisplayName", "Name", "FullName"], first: ["Firstname", "FirstName", "First Name"], last: ["Lastname", "LastName", "Last Name"],
+  team: ["Team", "Club", "TeamName"],
+};
+// "9:12:33", "09:12:33.4", "1h12:33" or seconds of the day -> seconds of the day
+function todSec(v: string): number | null {
+  const t = v.replace(",", ".").trim();
+  if (!t) return null;
+  if (/^\d+(\.\d+)?$/.test(t)) return parseFloat(t);
+  const m = t.match(/(\d{1,2})[:h](\d{2}):(\d{2}(?:\.\d+)?)/);
+  return m ? +m[1] * 3600 + +m[2] * 60 + parseFloat(m[3]) : null;
+}
+async function pullFinish(ev: string, URL_?: string | null) {
+  if (!URL_) return { finishers: 0, note: "No finishers link" };
+  const res = await fetch(URL_);
+  if (!res.ok) throw new Error(`RR14 finishers ${res.status}`);
+  const rows = parseList(await res.text(), Object.values(FIN_ALIASES).map((a) => a[0]));
+  const present = new Set(Object.keys(rows[0] ?? {}));
+  const col = (k: string) => FIN_ALIASES[k].find((n) => present.has(n)) ?? FIN_ALIASES[k][0];
+  const now = new Date().toISOString();
+  const out = rows.map((r) => {
+    const g = (k: string) => String(r[col(k)] ?? "").trim();
+    const tod = g("tod"), sec = todSec(tod), n = parseInt(g("members"));
+    return { event_id: ev, bib: parseInt(g("bib")), finish_tod: tod, finish_sec: sec, members: Number.isFinite(n) && n > 0 ? n : 1,
+      name: g("name") || `${g("first")} ${g("last")}`.trim(), team: g("team"), seen_at: now, gone_at: null, updated_at: now };
+  }).filter((f) => Number.isFinite(f.bib) && f.bib > 0 && f.finish_sec != null);
+  for (let i = 0; i < out.length; i += 500) {
+    const { error } = await sb.from("checkin_finishers").upsert(out.slice(i, i + 500), { onConflict: "event_id,bib" });
+    if (error) throw error;
+  }
+  // A finish taken off the list (wrong read, DSQ) is hidden, never deleted; only when the list looks complete.
+  let gone = 0;
+  const { data: known } = await sb.from("checkin_finishers").select("bib").eq("event_id", ev).is("gone_at", null);
+  if (out.length && out.length >= (known?.length ?? 0) / 2) {
+    const seen = new Set(out.map((f) => f.bib));
+    const miss = (known ?? []).map((k) => k.bib).filter((b) => !seen.has(b));
+    if (miss.length) { await sb.from("checkin_finishers").update({ gone_at: now }).eq("event_id", ev).in("bib", miss); gone = miss.length; }
+  }
+  return { finishers: out.length, rows: rows.length, gone, columns: [...present].slice(0, 30) };
+}
+
 // App key -> our read column, so a write uses the column name this event's RR14 list really has (e.g. CellPhone).
 const APP_TO_READ: Record<string, string> = {
   first: "first_name", last: "last_name", team: "team", sex: "sex", nat: "nation", qid: "qid", email: "email",
@@ -211,6 +256,17 @@ Deno.serve(async (req) => {
   const pending = new Set((open ?? []).map((r) => r.event_id));
   const out: Record<string, unknown> = {};
   let ok = true;
+  if (mode === "finish") {
+    for (const e of events ?? []) {
+      if (!(e.open || e.active)) continue;
+      const { data: rr } = await sb.from("checkin_event_rr").select("finish_url").eq("event_id", e.id).maybeSingle();
+      if (!rr?.finish_url) continue;
+      try { out[e.id] = await pullFinish(e.id, rr.finish_url); } catch (err) { ok = false; out[e.id] = { error: String(err) }; }
+      // Status kept beside the link (not on the event row, which the main sync rewrites and every iPad listens to).
+      await sb.from("checkin_event_rr").update({ finish_sync: { at: new Date().toISOString(), ...(out[e.id] as object) } }).eq("event_id", e.id);
+    }
+    return Response.json({ ok, events: out }, { status: ok ? 200 : 502 });
+  }
   for (const e of events ?? []) {
     if (e.open || e.active) out[e.id] = await syncEvent(e, mode);
     else if (pending.has(e.id)) out[e.id] = await syncEvent(e, "push");

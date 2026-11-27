@@ -48,7 +48,7 @@ Deno.serve(async (req) => {
   const { data: who } = await sb.auth.getUser(jwt);
   if (!who?.user) return json({ error: "Sign in first." }, 401);
 
-  const { action, pin, token, value, deviceId, eventId, name, listUrl, writeUrl, copy, copyFrom, sigId, bib, a, b, device, fields } = await req.json().catch(() => ({}));
+  const { action, pin, token, value, deviceId, eventId, name, listUrl, writeUrl, finishUrl, copy, copyFrom, sigId, bib, a, b, device, fields } = await req.json().catch(() => ({}));
   const { data: row } = await sb.from("checkin_secret").select("pin_hash").maybeSingle();
   const hash = row?.pin_hash as string | null;
 
@@ -119,7 +119,7 @@ Deno.serve(async (req) => {
       (await sb.from("checkin_participants").select("bib", { count: "exact", head: true }).eq("event_id", e.id)).count ?? 0));
     return json({ events: (evs ?? []).map((e, i) => {
       const r = rr?.find((x) => x.event_id === e.id);
-      return { ...e, participants: counts[i], list: mask(r?.list_url), write: mask(r?.write_url) };
+      return { ...e, participants: counts[i], list: mask(r?.list_url), write: mask(r?.write_url), finish: mask(r?.finish_url), finishSync: r?.finish_sync ?? null };
     }) });
   }
   if (action === "createEvent") {
@@ -150,13 +150,14 @@ Deno.serve(async (req) => {
   if (action === "saveEvent") {
     const ev = eventId || (await active())?.id;
     if (!ev) return json({ error: "No event" }, 400);
-    if (!okUrl(listUrl) || !okUrl(writeUrl)) return json({ error: "RR14 links must start with https://" }, 400);
+    if (!okUrl(listUrl) || !okUrl(writeUrl) || !okUrl(finishUrl)) return json({ error: "RR14 links must start with https://" }, 400);
     if (name != null && String(name).trim()) await sb.from("checkin_events").update({ name: String(name).trim() }).eq("id", ev);
     // undefined = keep the stored link, "" = remove it
     const { data: r } = await sb.from("checkin_event_rr").select("*").eq("event_id", ev).maybeSingle();
     await sb.from("checkin_event_rr").upsert({ event_id: ev,
       list_url: listUrl === undefined ? r?.list_url ?? null : listUrl || null,
       write_url: writeUrl === undefined ? r?.write_url ?? null : writeUrl || null,
+      finish_url: finishUrl === undefined ? r?.finish_url ?? null : finishUrl || null,
       updated_at: new Date().toISOString() });
     return json({ ok: true });
   }
@@ -174,6 +175,10 @@ Deno.serve(async (req) => {
   if (action === "syncNow") {
     const r = await fetch(`${URL_}/functions/v1/checkin-sync`, { method: "POST", headers: { Authorization: `Bearer ${KEY}` } });
     return json(await r.json().catch(() => ({ ok: false, error: `sync ${r.status}` })));
+  }
+  if (action === "finishNow") {
+    const r = await fetch(`${URL_}/functions/v1/checkin-sync?mode=finish`, { method: "POST", headers: { Authorization: `Bearer ${KEY}` } });
+    return json(await r.json().catch(() => ({ ok: false, error: `finishers ${r.status}` })));
   }
   if (action === "retryOutbox") {
     const ev = eventId || (await active())?.id;

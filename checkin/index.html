@@ -230,6 +230,16 @@ table{width:100%;border-collapse:collapse}th,td{padding:8px 6px;border-bottom:1p
 .npad{position:fixed;left:50%;bottom:calc(10vh + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:30;display:none;grid-template-columns:repeat(3,106px);gap:9px;padding:11px;background:var(--paper);border:1.5px solid var(--line);border-radius:18px;box-shadow:0 8px 30px #0005;touch-action:manipulation;user-select:none;-webkit-user-select:none}
 .npad.on{display:grid}.npad button{min-height:70px;height:70px;padding:0;border-radius:13px;font:700 33px/1 "Barlow Condensed",sans-serif}
 .npad .k-ok{grid-column:1/-1;background:var(--red);color:#fff;border-color:var(--red);font-size:26px}.npad .k-s{font-size:20px}.npad [data-k="ABC"]{font:600 14px/1 inherit;min-height:44px;height:44px;width:72%;align-self:center;justify-self:center;color:var(--mute)}
+.mdg{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.md{position:relative;overflow:hidden;min-height:118px;padding:10px 8px 12px;border:0;border-radius:16px;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;text-align:center;touch-action:manipulation;transition:background .25s}
+.md.t{background:#7b1e2e}.md.s{background:#1d4ed8}.md .n{font:800 54px/1 "Barlow Condensed",sans-serif}.md .n small{font-size:20px;font-weight:700;margin-left:4px}
+.md .l{font-size:14px;font-weight:600;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;opacity:.92}.md .tm{font-size:12px;opacity:.8}
+.md.pend{background:light-dark(#9a9a95,#4a4a46)}.md.pend::after{content:"";position:absolute;left:0;bottom:0;height:5px;background:#fff9;animation:mdbar 5s linear var(--d,0s) forwards}
+.md .u{display:none;font-size:13px;font-weight:700}.md.pend .u{display:block}
+@keyframes mdbar{from{width:100%}to{width:0}}
+.mdl{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:6px}
+.mdl li button{width:100%;display:flex;align-items:center;gap:10px;padding:6px 10px;min-height:44px;border:1.5px solid var(--line);border-radius:12px;background:var(--paper);color:var(--mute);text-align:left;font-size:15px}
+.mdl .bb{font:800 18px/1 "Barlow Condensed",sans-serif;min-width:2.8em;text-align:center;padding:4px 6px;border-radius:8px;color:#fff;background:light-dark(#9a9a95,#5a5a56)}.mdl .nm{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ov{position:fixed;inset:0;background:#000a;z-index:20;display:none;align-items:flex-start;justify-content:center;padding:4vh 12px;overflow:auto}
 .ov.on{display:flex}
 .sheet{background:var(--paper);border-radius:16px;padding:20px;width:min(760px,100%);border:2px solid var(--ink)}
@@ -259,6 +269,7 @@ body.settings #gear{background:var(--red);color:#fff}
     <a href="#swap" data-v="swap" title="Change participant"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 4 3 8l4 4M3 8h14M17 20l4-4-4-4M21 16H7"/></svg><span class="lbl">Change</span></a>
     <a href="#add" data-v="add" title="New participant on a free bib"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="4"/><path d="M2 21c0-4 3-6 7-6s7 2 7 6M19 8v6M16 11h6"/></svg><span class="lbl">New</span></a>
     <a href="#chips" data-v="chips" title="Team chips"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="2"/><path d="M9 2v4M15 2v4M9 18v4M15 18v4M2 9h4M2 15h4M18 9h4M18 15h4"/></svg><span class="lbl">Chips</span></a>
+    <a href="#medals" data-v="medals" title="Medals at the finish"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 2l2.5 6M16 2l-2.5 6"/><circle cx="12" cy="15" r="6"/><path d="M12 12.5l.9 1.8 2 .3-1.45 1.4.35 2-1.8-.95-1.8.95.35-2L9.1 14.6l2-.3z"/></svg><span class="lbl">Medals</span></a>
   </nav>
   <div class="foot">
     <button type="button" class="chip lbl" id="evName" title="Change event" style="font-weight:700;opacity:1;background:none;border:0;color:inherit;text-align:left;cursor:pointer;text-decoration:underline dotted"></button>
@@ -299,6 +310,14 @@ body.settings #gear{background:var(--red);color:#fff}
     <div class="panel"><div style="display:flex;gap:10px"><input class="search" id="cpQ" type="search" placeholder="Bib, name or team" autocomplete="off" inputmode="numeric" style="flex:1"><button type="button" class="btn" id="cpScan" style="white-space:nowrap">Scan QR / barcode</button></div>
       <p class="small" id="cpMsg"></p><ul class="swl" id="cpL"></ul></div>
     <div class="panel"><h3 style="margin:0 0 8px">Chips handed out <span class="sub" id="cpCount"></span></h3><div class="scroll" style="max-height:44vh;overflow:auto"><table id="cpHist"></table></div></div>
+  </section>
+  <section class="view" id="v-medals">
+    <div style="display:flex;align-items:baseline;gap:14px;flex-wrap:wrap"><h2 style="margin:0">Medals</h2><span class="sub" id="mdKpi"></span></div>
+    <p class="sub" style="margin:4px 0 12px">Newest finishers on top. Tap a card when the medal is handed over: it turns grey, and after 5 seconds it moves down to Given. Tap it again within the 5 seconds to undo.</p>
+    <p class="note warn" id="mdMsg" hidden></p>
+    <div class="mdg" id="mdW"></div>
+    <h3 style="margin:22px 0 8px">Given <span class="sub" id="mdGc"></span></h3>
+    <ul class="mdl" id="mdG"></ul>
   </section>
   <section class="view" id="v-add">
     <h2 style="margin:0 0 4px">New participant</h2>
@@ -459,6 +478,7 @@ body.settings #gear{background:var(--red);color:#fff}
     <div class="form" id="rrLinks">
       <label class="wide">RR14 list link for this iPad's event (read, JSON)<input name="evList" data-skip type="url" autocomplete="off" placeholder="https://…"></label>
       <label class="wide">RR14 write link for this iPad's event (part/savefields)<input name="evWrite" data-skip type="url" autocomplete="off" placeholder="https://…"></label>
+      <label class="wide">RR14 finishers link for the Medals tab (Bib, FinishTOD, Team Members)<input name="evFinish" data-skip type="url" autocomplete="off" placeholder="https://…"></label>
     </div>
     <p class="small" style="margin:4px 0">Leave a field empty to keep the stored link. The links are stored on the server and never sent to the iPads.</p>
     <div class="acts" style="justify-content:flex-start"><button type="button" class="ghost" id="evSaveLinks">Save RR14 links</button><button type="button" class="ghost" id="evNewBtn">New event</button></div>
@@ -518,7 +538,7 @@ body.settings #gear{background:var(--red);color:#fff}
 "use strict";
 {
 let syncState=null,EV=null;
-const APP_VERSION="2.0.15";
+const APP_VERSION="2.1.0";
 const SIZES=["XS","S","M","L","XL","XXL"];
 const FIELDS=[["dob","Date of birth",'type="date"'],["nat","Nation",'autocapitalize="characters" placeholder="e.g. QATAR"'],["qid","QID",'inputmode="numeric"'],["ice","ICE person",'placeholder="Emergency contact name"'],["icePhone","ICE phone",'type="tel" placeholder="+974…"'],["email","Email",'type="email" placeholder="name@example.com"'],["phone","Phone",'type="tel" placeholder="+974…"']];
 const FK=FIELDS.map(f=>f[0]);
@@ -604,6 +624,7 @@ $("evPick").onclick=e=>{const b=e.target.closest("[data-ev]");if(!b)return;if(EV
 $("evName").onclick=()=>{if(sel&&$("cv")&&ink){$("qrmsg").textContent="Finish or clear the open signature first.";return}askEvent()};
 const idle=()=>!(sel&&$("cv"))&&!(chBib&&location.hash==="#swap")&&!document.querySelector(".ov.on")&&!document.body.classList.contains("settings")&&!$("doneOv").classList.contains("on")&&!$("camOv").classList.contains("on");
 function reloadWhenIdle(){if(idle())location.reload();else setTimeout(reloadWhenIdle,3000)}
+let mdT=0;function soonMd(){clearTimeout(mdT);mdT=setTimeout(renderMedals,150)}
 let rt=0;function soon(){clearTimeout(rt);rt=setTimeout(()=>{if(sel&&$("cv")&&!["merch","stats"].includes(location.hash.slice(1))){renderList();return}render()},120)}
 
 /* ---- device ---- */
@@ -714,7 +735,7 @@ $("qrCopy").onclick=async e=>{const b=e.currentTarget;try{await navigator.clipbo
 async function renderEvents(){const box=$("evList");box.innerHTML='<p class="sub">Loading…</p>';
   try{EVS=(await admin("listEvents")).events||[]}catch(e){box.innerHTML=`<p class="note warn">${esc(e.message)}</p>`;return}
   box.innerHTML=EVS.length?EVS.map(e=>{const here=EV&&EV.id===e.id;return `<div class="evrow"><b>${esc(e.name)}</b>${e.open?'<span class="on">Open</span>':'<span class="sub" style="flex:none">Closed</span>'}${here?'<span class="on" style="background:var(--ink)">This iPad</span>':""}<span class="sub">${esc(e.id)} · ${e.participants} participants · read ${e.list?esc(e.list):"<i>not set</i>"} · write ${e.write?esc(e.write):"<i>not set</i>"}</span>${e.open?`<button type="button" class="ghost" data-qr="${esc(e.id)}">Setup QR for new iPads</button>`:""}${e.open&&!here?`<button type="button" class="ghost" data-use="${esc(e.id)}">Use on this iPad</button>`:""}<button type="button" class="ghost" data-open="${esc(e.id)}" data-to="${e.open?0:1}">${e.open?"Close":"Open"}</button></div>`}).join(""):'<p class="note warn">No events yet. Create the first one below.</p>';
-  const a=EV&&EVS.find(e=>e.id===EV.id),f=$("setForm");f.elements.evList.placeholder=a&&a.list?"Stored: "+a.list:"https://…";f.elements.evWrite.placeholder=a&&a.write?"Stored: "+a.write:"https://…";
+  const a=EV&&EVS.find(e=>e.id===EV.id),f=$("setForm");f.elements.evList.placeholder=a&&a.list?"Stored: "+a.list:"https://…";f.elements.evWrite.placeholder=a&&a.write?"Stored: "+a.write:"https://…";f.elements.evFinish.placeholder=a&&a.finish?"Stored: "+a.finish+(a.finishSync?` · last read ${hm(a.finishSync.at)}: ${a.finishSync.error?a.finishSync.error:(a.finishSync.finishers??0)+" finishers"}`:""):"https://…";
   $("rrLinks").hidden=$("evSaveLinks").hidden=!a}
 $("evList").onclick=async e=>{const u=e.target.closest("[data-use]"),o=e.target.closest("[data-open]"),qb=e.target.closest("[data-qr]");
   if(qb){showSetupQR(EVS.find(x=>x.id===qb.dataset.qr));return}
@@ -723,9 +744,9 @@ $("evList").onclick=async e=>{const u=e.target.closest("[data-use]"),o=e.target.
   if(!open&&o.dataset.sure!=="1"){o.dataset.sure="1";o.textContent=`Close ${ev?ev.name:"event"} on every iPad?`;return}
   o.disabled=true;try{await admin("setOpen",{eventId:o.dataset.open,value:open});$("evMsg").textContent=open?"Event open. iPads can pick it.":"Event closed. iPads on it are asked to pick another event."}catch(err){$("evMsg").textContent=err.message}renderEvents()};
 $("evNewBtn").onclick=()=>{$("evNew").hidden=!$("evNew").hidden};
-$("evSaveLinks").onclick=async()=>{const f=$("setForm"),l=f.elements.evList.value.trim(),w=f.elements.evWrite.value.trim(),m=$("evMsg");
-  if(!l&&!w){m.textContent="Paste a link first.";return}
-  try{await admin("saveEvent",{eventId:EV&&EV.id,listUrl:l||undefined,writeUrl:w||undefined});f.elements.evList.value=f.elements.evWrite.value="";m.textContent="RR14 links saved.";renderEvents()}catch(err){m.textContent=err.message}};
+$("evSaveLinks").onclick=async()=>{const f=$("setForm"),l=f.elements.evList.value.trim(),w=f.elements.evWrite.value.trim(),fi=f.elements.evFinish.value.trim(),m=$("evMsg");
+  if(!l&&!w&&!fi){m.textContent="Paste a link first.";return}
+  try{await admin("saveEvent",{eventId:EV&&EV.id,listUrl:l||undefined,writeUrl:w||undefined,finishUrl:fi||undefined});if(fi)admin("finishNow").catch(()=>{});f.elements.evList.value=f.elements.evWrite.value=f.elements.evFinish.value="";m.textContent="RR14 links saved.";renderEvents()}catch(err){m.textContent=err.message}};
 $("setForm").addEventListener("input",e=>{if(e.target.name==="newEvName"){const i=$("setForm").elements.newEvId;if(!i.dataset.touched)i.value=norm(e.target.value).replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"").slice(0,40)}if(e.target.name==="newEvId")e.target.dataset.touched="1"});
 $("evCreate").onclick=async()=>{const f=$("setForm").elements,m=$("evMsg"),b=$("evCreate");b.disabled=true;
   const newId=f.newEvId.value.trim().toLowerCase();
@@ -789,7 +810,7 @@ $("setForm").onsubmit=async e=>{e.preventDefault();const f=e.target,n={map:{}};
   closeSettings();if(sel&&!ink){const p=byBib(sel);if($("card"))$("card").outerHTML=bibCard(p)}render()};
 
 /* ---- routing ---- */
-function route(){const h=location.hash.slice(1),v=["checkin","merch","stats","swap","add","chips"].includes(h)?h:"checkin";
+function route(){const h=location.hash.slice(1),v=["checkin","merch","stats","swap","add","chips","medals"].includes(h)?h:"checkin";
   document.querySelectorAll(".view").forEach(e=>e.classList.toggle("on",e.id==="v-"+v));
   document.querySelectorAll("aside nav a").forEach(a=>a.dataset.v===v?a.setAttribute("aria-current","page"):a.removeAttribute("aria-current"));render()}
 addEventListener("hashchange",()=>{if(document.body.classList.contains("settings"))closeSettings();route()});
@@ -967,6 +988,30 @@ $("chipUndo").onclick=async()=>{const u=$("chipUndo"),p=byBib(cpBib);if(!p)retur
   try{await RR.chipUndo(p.bib);teamOf(p).forEach(m=>Object.assign(m,{chipTime:null,chipBy:null,chipDesk:null}));chipShow(p);renderChips()}catch(e){$("chipState").textContent="Not undone: "+e.message}};
 $("cpQ").oninput=renderChips;
 $("cpQ").addEventListener("keydown",e=>{if(e.key!=="Enter")return;const v=e.target.value.trim();if(/\d/.test(v)&&!/\s/.test(v)){e.preventDefault();cpGot(v)}else{const f=$("cpL").querySelector("[data-cp]");if(f){e.preventDefault();cpGot(f.dataset.cp)}}});
+/* ---- Medals: finishers from RR14 (checkin_finishers, pulled every 10 s). Team cards are maroon with the number of members (= medals), solo cards blue with the bib. ---- */
+let F=[];const mdPend={};
+const finRow=r=>({bib:r.bib,tod:r.finish_tod,sec:r.finish_sec,members:r.members||1,name:r.name||"",team:r.team||"",medal:r.medal_at,mdesk:r.medal_device,gone:!!r.gone_at});
+async function loadFin(){if(!EV){F=[];return}const out=[];for(let i=0;;i+=1000){const{data,error}=await sb.from("checkin_finishers").select("*").eq("event_id",EV.id).order("bib").range(i,i+999);if(error)throw error;out.push(...(data||[]));if(!data||data.length<1000)break}F=out.map(finRow).filter(f=>!f.gone)}
+function finTeam(f){const p=byBib(f.bib);return f.members>1||!!(p&&p.team)}
+function finLabel(f){const p=byBib(f.bib);return finTeam(f)?(f.team||(p&&p.team)||f.name):(f.name||(p?fullName(p):""))}
+const tod=f=>String(f.tod||"").replace(/\.\d+$/,"");
+function renderMedals(){const W=F.filter(f=>!f.medal).sort((a,b)=>(b.sec||0)-(a.sec||0)),G=F.filter(f=>f.medal).sort((a,b)=>String(b.medal).localeCompare(String(a.medal)));
+  const med=L=>L.reduce((s,f)=>s+(finTeam(f)?f.members:1),0);
+  $("mdKpi").textContent=`${F.length} finished · ${W.length} waiting (${med(W)} medals) · ${med(G)} medals given`;
+  $("mdW").innerHTML=W.length?W.map(f=>{const t=finTeam(f);return `<button type="button" class="md ${t?"t":"s"}${mdPend[f.bib]?" pend":""}" ${mdPend[f.bib]?`style="--d:-${((Date.now()-mdPend[f.bib].at)/1000).toFixed(2)}s"`:""} data-md="${f.bib}" aria-label="${t?f.members+" medals for team "+esc(finLabel(f)):"Medal for bib "+f.bib}"><span class="n">${t?`${f.members}<small>×</small>`:f.bib}</span><span class="l">${t?"#"+f.bib+" ":""}${esc(finLabel(f))}</span><span class="tm">${esc(tod(f))}</span><span class="u">Tap to undo</span></button>`}).join(""):'<p class="sub">Nobody waiting for a medal.</p>';
+  $("mdGc").textContent=G.length?`· ${G.length}`:"";
+  $("mdG").innerHTML=G.slice(0,300).map(f=>{const t=finTeam(f);return `<li><button type="button" data-mg="${f.bib}"><span class="bb">${f.bib}</span><span class="nm">${t?f.members+"× · ":""}${esc(finLabel(f))}</span><span>${hm(f.medal)}</span>${f.mdesk?tabTag(f.mdesk):""}</button></li>`}).join("")}
+async function mdCommit(bib){delete mdPend[bib];const f=F.find(x=>x.bib===bib);
+  const{error}=await sb.rpc("checkin_medal",{p_event:EV.id,p_bib:bib,p_device:device||"",p_on:true});
+  if(error){$("mdMsg").hidden=false;$("mdMsg").textContent=`Bib ${bib}: ${error.message}`}else if(f){f.medal=f.medal||new Date().toISOString();f.mdesk=f.mdesk||device}
+  if(location.hash==="#medals")renderMedals()}
+$("mdW").addEventListener("click",e=>{const b=e.target.closest("[data-md]");if(!b)return;const bib=+b.dataset.md;$("mdMsg").hidden=true;
+  if(mdPend[bib]){clearTimeout(mdPend[bib].t);delete mdPend[bib];b.classList.remove("pend");return}
+  mdPend[bib]={t:setTimeout(()=>mdCommit(bib),5000),at:Date.now()};b.classList.add("pend")});
+$("mdG").addEventListener("click",async e=>{const b=e.target.closest("[data-mg]");if(!b)return;const bib=+b.dataset.mg;
+  if(b.dataset.sure!=="1"){b.dataset.sure="1";b.querySelector(".nm").textContent="Tap again: take the medal back";setTimeout(()=>{if(b.isConnected&&location.hash==="#medals")renderMedals()},4000);return}
+  const{error}=await sb.rpc("checkin_medal",{p_event:EV.id,p_bib:bib,p_device:device||"",p_on:false});
+  if(error){$("mdMsg").hidden=false;$("mdMsg").textContent=error.message;return}const f=F.find(x=>x.bib===bib);if(f){f.medal=null;f.mdesk=null}renderMedals()});
 $("cpL").onclick=e=>{const b=e.target.closest("[data-cp]");if(b)cpGot(b.dataset.cp)};
 $("cpScan").onclick=()=>$("scanBtn").click();
 /* ---- New tab: a new participant on a free bib ---- */
@@ -1213,7 +1258,7 @@ function renderStats(){renderNC();
   $("recent").innerHTML=ev.length?`<table class="stack"><thead><tr><th>Time</th><th>What</th><th>Device</th></tr></thead><tbody>${ev.slice(0,12).map(([t,s,d])=>`<tr><td class="n">${fmt(t)}</td><td>${esc(s)}</td><td>${esc(d||"")}</td></tr>`).join("")}</tbody></table>`:'<p class="empty">No activity yet.</p>';
 }
 
-function render(){$("slogan").textContent=cfg.slogan||"Made with Passion. Driven by Data.";const v=location.hash.slice(1);$("scanFab").hidden=v==="merch"||v==="stats"||v==="swap"||v==="add"||v==="chips";if(v==="chips")renderChips();else if(v==="add")renderAdd();else if(v==="merch")renderMerch();else if(v==="stats")renderStats();else if(v==="swap")renderSwap();else{renderList();if(!$("cv")||!sel)renderDetail()}}
+function render(){$("slogan").textContent=cfg.slogan||"Made with Passion. Driven by Data.";const v=location.hash.slice(1);$("scanFab").hidden=v==="merch"||v==="stats"||v==="swap"||v==="add"||v==="chips"||v==="medals";if(v==="medals")renderMedals();else if(v==="chips")renderChips();else if(v==="add")renderAdd();else if(v==="merch")renderMerch();else if(v==="stats")renderStats();else if(v==="swap")renderSwap();else{renderList();if(!$("cv")||!sel)renderDetail()}}
 
 /* ---- events ---- */
 $("q").oninput=()=>{renderList();const v=$("q").value.trim();if(/^\d+$/.test(v)&&byBib(+v)&&String(byBib(+v).bib)===v&&!P.some(p=>String(p.bib).startsWith(v)&&p.bib!==+v))select(+v)};
@@ -1238,16 +1283,18 @@ $("desk").onclick=e=>{const g=e.target.closest("[data-give]"),u=e.target.closest
 $("ver").textContent="v"+APP_VERSION;showDevice();route();
 let started=false,subOnce=false;
 async function start(){if(started)return;started=true;$("mode").textContent="Connecting…";
-  try{await loadCfg();await loadAll();evBoot=true}catch(e){started=false;$("mode").textContent="Cannot load data, retrying";setTimeout(start,5000);return}
+  try{await loadCfg();await loadAll();await loadFin().catch(()=>{});evBoot=true}catch(e){started=false;$("mode").textContent="Cannot load data, retrying";setTimeout(start,5000);return}
   render();watchDevices();
   if(!EV){lastRR='<div class="note warn">Pick the event this iPad works on.</div>';render();askEvent()}else{if(!device)askDevice();restoreDraft()}
   sb.channel("checkin")
     .on("postgres_changes",{event:"*",schema:"public",table:"checkin_participants",...(EV?{filter:"event_id=eq."+EV.id}:{})},pl=>{if(pl.eventType==="DELETE"){P=P.filter(p=>p.bib!==(pl.old||{}).bib)}else{const n=fromRow(pl.new),i=P.findIndex(p=>p.bib===n.bib);if(!keep(n)){if(i>=0)P.splice(i,1)}else if(i<0)P.push(n);else P[i]=n}soon()})
+    .on("postgres_changes",{event:"*",schema:"public",table:"checkin_finishers",...(EV?{filter:"event_id=eq."+EV.id}:{})},pl=>{const r=pl.new||{};if(!r.bib)return;const n=finRow(r),i=F.findIndex(f=>f.bib===n.bib);if(n.gone){if(i>=0)F.splice(i,1)}else if(i>=0)F[i]=n;else F.push(n);if(location.hash==="#medals"&&!Object.keys(mdPend).length)soonMd()})
     .on("postgres_changes",{event:"*",schema:"public",table:"checkin_devices"},()=>loadDevs())
     .on("postgres_changes",{event:"*",schema:"public",table:"checkin_events"},pl=>applyEvent(pl.new))
     .subscribe(st=>{if(st==="SUBSCRIBED"){$("mode").textContent="Live sync on";if(subOnce)loadAll().then(soon).catch(()=>{});subOnce=true}
       else if(st==="CHANNEL_ERROR"||st==="TIMED_OUT"||st==="CLOSED")$("mode").textContent="Reconnecting…"});
   setInterval(()=>loadAll().then(soon).catch(()=>{}),120000);
+  setInterval(()=>{if(location.hash==="#medals"&&!Object.keys(mdPend).length)loadFin().then(renderMedals).catch(()=>{})},30000);
   /* updates: a new version loads only when no participant is open on this iPad */
   setInterval(async()=>{try{const r=await fetch("version.json?t="+Date.now(),{cache:"no-store"}),j=await r.json();
     if(j.version&&j.version!==APP_VERSION&&idle())location.reload()}catch(e){}},60000);
