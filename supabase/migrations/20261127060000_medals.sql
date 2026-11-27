@@ -42,8 +42,8 @@ end $$;
 revoke execute on function public.checkin_medal(text, integer, text, boolean) from public, anon;
 grant execute on function public.checkin_medal(text, integer, text, boolean) to authenticated;
 alter table checkin_event_rr add column if not exists finish_sync jsonb;
--- Finishers are pulled every 10 s, apart from the 30 s participant sync.
-select cron.schedule('checkin-finish','10 seconds', $c$
+-- Finishers are pulled every 2 s, apart from the 30 s participant sync.
+select cron.schedule('checkin-finish','2 seconds', $c$
       select net.http_post(
         url := 'https://pmkwyppjeoxhtravtutv.supabase.co/functions/v1/checkin-sync?mode=finish',
         headers := jsonb_build_object('Content-Type','application/json',
