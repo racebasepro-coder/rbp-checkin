@@ -551,7 +551,7 @@ body.settings #gear{background:var(--red);color:#fff}
 "use strict";
 {
 let syncState=null,EV=null;
-const APP_VERSION="2.1.4";
+const APP_VERSION="2.1.5";
 const SIZES=["XS","S","M","L","XL","XXL"];
 const FIELDS=[["dob","Date of birth",'type="date"'],["nat","Nation",'autocapitalize="characters" placeholder="e.g. QATAR"'],["qid","QID",'inputmode="numeric"'],["ice","ICE person",'placeholder="Emergency contact name"'],["icePhone","ICE phone",'type="tel" placeholder="+974…"'],["email","Email",'type="email" placeholder="name@example.com"'],["phone","Phone",'type="tel" placeholder="+974…"']];
 const FK=FIELDS.map(f=>f[0]);
@@ -1027,7 +1027,7 @@ function mdInfo(v){let out="";const r={set innerHTML(h){out=h}};
   let st;if(!f)st=`<div class="st" style="color:var(--mute)">Not finished yet</div>`;
   else if(f.medal)st=`<div class="st" style="color:var(--ok)">${team?f.members+" medals":"Medal"} handed over at ${hm(f.medal)}${team&&f.mby?" to "+byTxt(f):""}${f.mdesk?" · "+tabTag(f.mdesk):""}</div><div class="sub">Finished ${esc(tod(f))}${f.bib!==bib?" · team bib "+f.bib:""}</div>`;
   else st=`<div class="st" style="color:var(--red)">Finished ${esc(tod(f))}, ${team?"medals":"medal"} not handed over yet</div><button type="button" class="pri" data-mdq="${f.bib}" style="min-height:52px">${team?"Hand over "+f.members+" medals":"Hand over the medal"}</button>`;
-  r.innerHTML=`<div class="mdr" style="border-color:${team?"#7b1e2e":"#1d4ed8"}"><h3>${esc(team||(p?fullName(p):finLabel(f)))}</h3><div class="sub">${team?`${M.length} members · bib ${bib}${p?" "+esc(fullName(p)):""}`:`bib ${bib}`}</div>${st}${M.length>1?`<ul class="chipMem" style="grid-template-columns:repeat(auto-fill,minmax(220px,1fr))">${M.map(x=>`<li${x.bib===bib?' style="border-color:var(--ink)"':""}><span class="bb" style="background:light-dark(#8a8a85,#5a5a56);color:#fff">${x.bib}</span><span class="nm">${esc(fullName(x))}</span></li>`).join("")}</ul>`:""}</div>`;return out}
+  r.innerHTML=`<div class="mdr" style="border-color:${team?"#7b1e2e":"#1d4ed8"}"><h3>${esc(team||(p?fullName(p):finLabel(f)))}</h3><div class="sub">${team?`${M.length} members · bib ${bib}${p?" "+esc(fullName(p)):""}`:`bib ${bib}`}</div>${st}${M.length>1?`<ul class="chipMem" style="grid-template-columns:1fr;grid-auto-flow:row;gap:6px">${M.map(x=>`<li${x.bib===bib?' style="border-color:var(--ink)"':""}><span class="bb" style="background:light-dark(#8a8a85,#5a5a56);color:#fff">${x.bib}</span><span class="nm">${esc(fullName(x))}</span></li>`).join("")}</ul>`:""}</div>`;return out}
 $("mdQ").oninput=mdLook;
 $("mdQ").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();mdLook()}});
 $("mdR").addEventListener("click",async e=>{const b=e.target.closest("[data-mdq]");if(!b)return;const f=F.find(x=>x.bib===+b.dataset.mdq);if(f&&finTeam(f)){mdAsk(f);return}b.disabled=true;await mdCommit(+b.dataset.mdq,null);mdLook()});
