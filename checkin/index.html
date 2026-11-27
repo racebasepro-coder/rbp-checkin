@@ -316,7 +316,7 @@ body.settings #gear{background:var(--red);color:#fff}
   </section>
   <section class="view" id="v-medals">
     <div style="display:flex;align-items:baseline;gap:14px;flex-wrap:wrap"><h2 style="margin:0">Medals</h2><span class="sub" id="mdKpi"></span></div>
-    <p class="sub" style="margin:4px 0 12px">Newest finishers on top. Tap a card when the medal is handed over: it turns grey, and after 5 seconds it moves down to Given. Tap it again within the 5 seconds to undo.</p>
+    <p class="sub" style="margin:4px 0 12px">Newest finishers on top. Tap a card when the medal is handed over: it turns grey, and after 5 seconds it moves down to Given. Tap it again within the 5 seconds to undo. Tap a row under Given to see who took the medals and when.</p>
     <div class="panel" style="margin-bottom:12px"><input class="search" id="mdQ" type="search" placeholder="Bib of any team member: who took the medals?" autocomplete="off" inputmode="numeric"><div id="mdR"></div></div>
     <p class="note warn" id="mdMsg" hidden></p>
     <div class="mdg" id="mdW"></div>
@@ -550,7 +550,7 @@ body.settings #gear{background:var(--red);color:#fff}
 "use strict";
 {
 let syncState=null,EV=null;
-const APP_VERSION="2.1.2";
+const APP_VERSION="2.1.3";
 const SIZES=["XS","S","M","L","XL","XXL"];
 const FIELDS=[["dob","Date of birth",'type="date"'],["nat","Nation",'autocapitalize="characters" placeholder="e.g. QATAR"'],["qid","QID",'inputmode="numeric"'],["ice","ICE person",'placeholder="Emergency contact name"'],["icePhone","ICE phone",'type="tel" placeholder="+974…"'],["email","Email",'type="email" placeholder="name@example.com"'],["phone","Phone",'type="tel" placeholder="+974…"']];
 const FK=FIELDS.map(f=>f[0]);
@@ -1048,10 +1048,8 @@ $("mdX").onclick=()=>{$("mdOv").classList.remove("on");mdFor=null};
 $("mdPick").addEventListener("click",e=>{const b=e.target.closest("[data-by]");if(!b||mdFor==null)return;const bib=mdFor;mdFor=null;$("mdOv").classList.remove("on");
   if(location.hash==="#medals"&&$("mdQ").value&&!$("mdW").querySelector(`[data-md="${bib}"]`)){mdCommit(bib,+b.dataset.by);return}
   mdStart(bib,+b.dataset.by)});
-$("mdG").addEventListener("click",async e=>{const b=e.target.closest("[data-mg]");if(!b)return;const bib=+b.dataset.mg;
-  if(b.dataset.sure!=="1"){b.dataset.sure="1";b.querySelector(".nm").textContent="Tap again: take the medal back";setTimeout(()=>{if(b.isConnected&&location.hash==="#medals")renderMedals()},4000);return}
-  const{error}=await sb.rpc("checkin_medal",{p_event:EV.id,p_bib:bib,p_device:device||"",p_on:false,p_by:null});
-  if(error){$("mdMsg").hidden=false;$("mdMsg").textContent=error.message;return}const f=F.find(x=>x.bib===bib);if(f){f.medal=null;f.mdesk=null}renderMedals()});
+/* Given: no undo here. A tap shows who took the medals and when (in the lookup box on top). */
+$("mdG").addEventListener("click",e=>{const b=e.target.closest("[data-mg]");if(!b)return;$("mdQ").value=b.dataset.mg;mdLook();$("mdQ").scrollIntoView({behavior:"smooth",block:"start"})});
 $("cpL").onclick=e=>{const b=e.target.closest("[data-cp]");if(b)cpGot(b.dataset.cp)};
 $("cpScan").onclick=()=>$("scanBtn").click();
 /* ---- New tab: a new participant on a free bib ---- */
