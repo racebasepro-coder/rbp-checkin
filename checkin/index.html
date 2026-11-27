@@ -230,7 +230,7 @@ table{width:100%;border-collapse:collapse}th,td{padding:8px 6px;border-bottom:1p
 .npad{position:fixed;left:50%;bottom:calc(10vh + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:30;display:none;grid-template-columns:repeat(3,106px);gap:9px;padding:11px;background:var(--paper);border:1.5px solid var(--line);border-radius:18px;box-shadow:0 8px 30px #0005;touch-action:manipulation;user-select:none;-webkit-user-select:none}
 .npad.on{display:grid}.npad button{min-height:70px;height:70px;padding:0;border-radius:13px;font:700 33px/1 "Barlow Condensed",sans-serif}
 .npad .k-ok{grid-column:1/-1;background:var(--red);color:#fff;border-color:var(--red);font-size:26px}.npad .k-s{font-size:20px}.npad [data-k="ABC"]{font:600 14px/1 inherit;min-height:44px;height:44px;width:72%;align-self:center;justify-self:center;color:var(--mute)}
-#mdBub .mdr{margin:0;padding-right:56px}.mdr{margin-top:10px;padding:12px 14px;border-radius:14px;border:2px solid var(--line)}.mdr h3{margin:0 0 2px;font-size:26px}.mdr .st{font-size:19px;font-weight:700;margin:6px 0 8px}
+#mdBub .mdr{margin:0;padding-right:56px;border:0}#mdBub .bbar{position:sticky;bottom:0;height:6px;width:0;background:var(--red);border-radius:0 3px 3px 0;animation:bubbar 5s linear forwards}@keyframes bubbar{from{width:0}to{width:100%}}.mdr{margin-top:10px;padding:12px 14px;border-radius:14px;border:2px solid var(--line)}.mdr h3{margin:0 0 2px;font-size:26px}.mdr .st{font-size:19px;font-weight:700;margin:6px 0 8px}
 .mdPick{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px}.mdPick button{display:flex;align-items:center;gap:10px;min-height:64px;padding:8px 10px;border-radius:14px;text-align:left;font-size:16px}
 .mdPick .bb{font:800 26px/1 "Barlow Condensed",sans-serif;min-width:2.6em;text-align:center;padding:6px;border-radius:10px;background:#7b1e2e;color:#fff}.mdPick .nm{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .mdg{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
@@ -322,7 +322,7 @@ body.settings #gear{background:var(--red);color:#fff}
     <div class="mdg" id="mdW"></div>
     <h3 style="margin:22px 0 8px">Given <span class="sub" id="mdGc"></span></h3>
     <ul class="mdl" id="mdG"></ul>
-    <div id="mdBub" hidden role="status" style="position:fixed;z-index:25;background:var(--paper);border-radius:16px;box-shadow:0 10px 34px #0006"><button type="button" id="mdBubX" aria-label="Close" style="position:absolute;top:8px;right:8px;width:44px;height:44px;min-height:44px;padding:0;border-radius:50%;display:grid;place-items:center;z-index:1"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button><div class="in"></div></div>
+    <div id="mdBub" hidden role="status" style="position:fixed;z-index:25;left:50%;top:50%;transform:translate(-50%,-50%);width:min(560px,calc(100vw - 24px));max-height:86vh;overflow:auto;background:var(--paper);border-radius:16px;box-shadow:0 0 0 100vmax #0005,0 10px 34px #0006"><button type="button" id="mdBubX" aria-label="Close" style="position:absolute;top:8px;right:8px;width:44px;height:44px;min-height:44px;padding:0;border-radius:50%;display:grid;place-items:center;z-index:1"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button><div class="in"></div><div class="bbar"></div></div>
   </section>
   <section class="view" id="v-add">
     <h2 style="margin:0 0 4px">New participant</h2>
@@ -551,7 +551,7 @@ body.settings #gear{background:var(--red);color:#fff}
 "use strict";
 {
 let syncState=null,EV=null;
-const APP_VERSION="2.1.5";
+const APP_VERSION="2.1.6";
 const SIZES=["XS","S","M","L","XL","XXL"];
 const FIELDS=[["dob","Date of birth",'type="date"'],["nat","Nation",'autocapitalize="characters" placeholder="e.g. QATAR"'],["qid","QID",'inputmode="numeric"'],["ice","ICE person",'placeholder="Emergency contact name"'],["icePhone","ICE phone",'type="tel" placeholder="+974…"'],["email","Email",'type="email" placeholder="name@example.com"'],["phone","Phone",'type="tel" placeholder="+974…"']];
 const FK=FIELDS.map(f=>f[0]);
@@ -1052,10 +1052,9 @@ $("mdPick").addEventListener("click",e=>{const b=e.target.closest("[data-by]");i
   mdStart(bib,+b.dataset.by)});
 /* Given: no undo here. A tap shows who took the medals and when, in a bubble that closes after 5 s or on X. */
 let bubT=0;function bubClose(){clearTimeout(bubT);$("mdBub").hidden=true}
-$("mdG").addEventListener("click",e=>{const b=e.target.closest("[data-mg]");if(!b)return;const x=$("mdBub"),r=b.getBoundingClientRect();
+$("mdG").addEventListener("click",e=>{const b=e.target.closest("[data-mg]");if(!b)return;const x=$("mdBub");
   x.querySelector(".in").innerHTML=mdInfo(b.dataset.mg).replace(/<button[^>]*data-mdq[\s\S]*?<\/button>/,"");x.hidden=false;
-  const w=Math.min(560,innerWidth-24),h=x.offsetHeight;x.style.width=w+"px";x.style.left=Math.max(12,Math.min(r.left,innerWidth-w-12))+"px";
-  x.style.top=(r.top-h-10>8?r.top-h-10:Math.min(r.bottom+10,innerHeight-h-8))+"px";clearTimeout(bubT);bubT=setTimeout(bubClose,5000)});
+  const bar=x.querySelector(".bbar");bar.style.animation="none";void bar.offsetWidth;bar.style.animation="";clearTimeout(bubT);bubT=setTimeout(bubClose,5000)});
 $("mdBubX").onclick=bubClose;addEventListener("hashchange",bubClose);
 $("cpL").onclick=e=>{const b=e.target.closest("[data-cp]");if(b)cpGot(b.dataset.cp)};
 $("cpScan").onclick=()=>$("scanBtn").click();
